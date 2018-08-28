@@ -20,6 +20,8 @@ While students will all have significant experience with Matlab, the only way to
 - Nearly weekly problem sets: 50%
 - Final Project: 50%
 
+While the problem sets will be frequent, many will be short to force practice - and hence they will not be weighting uniformly in the grade.
+
 ## Course Parts and Programming Languages
 
 The course will be taught in 3 parts, starting with some econometric theory and assignments, and then moving to 
