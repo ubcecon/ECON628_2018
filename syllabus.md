@@ -6,7 +6,7 @@
 
 - **Instructors:** jesse.perla@ubc.ca and schrimpf@mail.ubc.ca
 - **Office Hours:** TBD
-- **Teaching Assistant:** Jasmine Hao, haojasmine@gmail.com
+- **Teaching Assistant:** Jasmine Hao, yu.hao@alumni.ubc.ca
 
 **Course Description**
 This is a graduate topics course in applied econometrics and computational economics.
