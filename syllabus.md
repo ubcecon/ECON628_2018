@@ -24,48 +24,48 @@ While the problem sets will be frequent, many will be short to force practice - 
 
 ## Course Parts and Programming Languages
 
-The course will be taught in 3 parts, starting with some econometric theory and assignments, and then moving to 
+The course will be taught in 4 parts, starting with some econometric
+theory and assignments, and then moving to 
 1. Econometric topics (Paul Schrimpf)
 2. Introduction to Julia and scientific computing (Jesse Perla)
 3. Dynamic Programming applications (Jesse Perla)
 4. Solving the econometric models (Paul Schrimpf)
 
-In part (1), we will use R for the majority of examples (where we may give you the option to use Matlab and/or Stata for some examples).
+In part (1), we will use R for the majority of examples. If you wish,
+you may choose to use another programming language for completing
+assignments, but it will likely be difficult.
 
-For parts (2) to (4) of the class, we will be using Julia.  While it would be nice to start the class by learning Julia, the package ecosystem and development tools are in the process of stabilizing after its 1.0 release.  While we will be able to use it when the 2nd part of the class starts, we suggest that you **avoid using Julia** until we give you the green-light.
+For parts (2) to (4) of the class, we will be using Julia.  While it
+would be nice to start the class by learning Julia, the package
+ecosystem and development tools are in the process of stabilizing
+after its 1.0 release.  While we will be able to use it when the 2nd
+part of the class starts, we suggest that you **avoid using Julia**
+until we give you the green-light. 
 
 
 ## Econometric Topics
 
-1. Linear panel data
-     - Fixed/Random effects, first differencing, strict exogeneity
-     - Potentially: dynamic panel
-
-2. Extremum estimators & optimization
+1. Machine learning methods and causal inference 
+     - Matching
+     - Instrumental variables
+     - Lasso
+     - Random forests
+     
+2. Linear panel data 
+     
+     
+3. Extremum estimators & optimization
      - Review of extremum estimators 
-     - Application to limited dependent variables
      - Introduction to optimization algorithms
-       
-3. Inference for extremum estimators
-     - Review of usual asymptotic distribution
-     - Identification robust inference from inverting LR-tests
-     - Bootstrap
+     - Inference for extremum estimators
        
 4. Unobserved heterogeneity and simulation based inference
      - Numeric integration, especially monte carlo
-     - BLP
-       
-5. Nonparametric methods
-     - Kernel, sieve
-     - Semiparametric models
-       
-6. Machine learning methods in econometrics
-     - As an alternative to traditional nonparametric methods      
-     - For high dimensional data 
-     - Instrument selection in BLP
-       
-7. (Hopefully) Dynamic structural models 
+
+5. Dynamic structural models 
      - Dynamic discrete choice, dynamic games
+     
+For topics 1 and 2 we will use R. Topics 3-5 will use Julia. 
      
 ## Computational Topics
 
