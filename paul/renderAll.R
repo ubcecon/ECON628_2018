@@ -7,7 +7,7 @@ library(revealjs)
 formats <- c("html_document",
              "revealjs::revealjs_presentation")
 extensions <- c(".html","_slides.html")
-myrender <- function(filename, output_format="all", ...) {
+renderAll <- function(filename, output_format="all", ...) {
   if (output_format=="all") {
     for (i in 1:length(formats)) {
       fmt  <- formats[i]
