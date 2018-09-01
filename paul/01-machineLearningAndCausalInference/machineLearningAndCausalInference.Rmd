@@ -13,12 +13,18 @@ output      :
         number_sections : true
         theme : journal
         css : ../628notes.css
+        code_folding: hide
+        lib_dir : deps
+        self_cononontained : false
     revealjs::revealjs_presentation:
         self_contained: false
         theme: league
         transition: slide
         center : true
         highlight : zenburn
+        code_folding: hide
+        lib_dir : deps
+        css : ../slides.css
         reveal_plugins: ["chalkboard","zoom","notes"]
         reveal_options:
             slideNumber: false
@@ -28,10 +34,22 @@ output      :
                 theme: whiteboard
                 toggleNotesButton: true
                 toggleChalkboardButton: true
+    ioslides_presentation :
+        self_contained: false
+        code_folding: hide
+        lib_dir : deps
+        theme : journal
 ## To create an html file from this, in R enter'source("../renderAll.R"); renderAll("filename.Rmd")'
+
 --- 
 
----
+$$ 
+\def\indep{\perp\!\!\!\perp}
+\def\Er{\mathrm{E}}
+\def\R{\mathbb{R}}
+\def\En{\mathbb{E}_n}
+\def\Pr{\mathrm{P}}
+$$
 
 # Introduction 
 
@@ -50,6 +68,23 @@ output      :
     taken when doing so though because the flexibility and complexity
     that make machine learning so good at prediction also pose
     challenges for inference. 
+    
+<div class="alert alert-danger">    
+### About this document {-}
+
+This document was created using Rmarkdown. The code is available in
+[the course github
+repository](https://github.com/ubcecon/ECON628_2018). The same
+document generates both the slides and these notes. The contents of
+the slides are reproduced here with a white background. Additional
+information has a beige background. Example code has a grey
+background. Display of code is toggleable. Asides, like this one, are
+red. 
+
+If you want to print this document, printing works reasonably with
+Chrome, but not Firefox. 
+</div>
+
 </aside>
 
 ---
@@ -61,7 +96,7 @@ $$
 $$
 
 - Interested in $\alpha$ 
-- Assume $E[\epsilon|d,x] = 0$
+- Assume $\Er[\epsilon|d,x] = 0$
 - Nuisance parameter $f()$
 
 <aside class="notes"> 
@@ -108,18 +143,35 @@ $$
     performance, and arguably more practical data-driven methods to choose
     tuning parameters. Machine learning methods can deal with high
     dimensional $x$, while traditional nonparametric methods focus on
-    situations with low dimensional $x$. 
+    situations with low dimensional $x$.  
+
+    **Example : Effect of abortion on crime**
+    
+    @donohue2001 estimate a regression of state crime rates on
+    crime type relevant abortion rates and controls, 
+    $$ 
+    y_{it} = \alpha a_{it} + x_{it}'\beta + \delta_i + \gamma_t +
+    \epsilon_{it}.
+    $$
+    $a_{it}$ is a weighted average of lagged abortion rates in
+    state $i$, with the weight on the $\ell$th lag equal to the
+    fraction of age $\ell$ people who commit a given crime type. The
+    covariates $x$ are  the log of lagged prisoners per capita, the
+    log of lagged police per capita, the unemployment rate, per-capita
+    income, the poverty rate, AFDC generosity at time t − 15, a dummy
+    for concealed weapons law, and beer consumption per
+    cap. @belloni2014 reanalyze this setup using lasso to allow a more
+    flexible specification of controls. They allow for many
+    interactions and quadratic terms, leading to 284 controls.    
 </aside> 
         
 ---
 
 ## Example: Matching
 
-$\def\indep{\perp\!\!\!\perp}$
-
 - Binary treatment $d_i \in \{0,1\}$
 - Potential outcomes $y_i(0), y_i(1)$, observe $y_i = y_i(d_i)$
-- Interested in average treatment effect : $\alpha = E[y_i(1) -
+- Interested in average treatment effect : $\alpha = \Er[y_i(1) -
   y_i(0)]$
 - Covariates $x_i$
 - Assume unconfoundedness : $d \indep y_i(1), y_i(0) | x_i$
@@ -134,22 +186,22 @@ $\def\indep{\perp\!\!\!\perp}$
     $y_i(1) - y_i(0) = \alpha$. 
     Thus the matching model can be viewed as a generalization
     of the partially linear model that allows for treatment effect
-    heterogeneity.     
+    heterogeneity.
 </aside>
 
 ---
 
-## Example: Matching
+## Example: Matching 
 
 - Estimatable formulae for ATE : 
 $$
 \begin{align*}
-  \alpha = & E\left[\frac{y_i d_i}{P(d = 1 | x_i)} + \frac{y_i
-      (1-d_i)}{1-P(d=1|x_i)} \right] \\
-  \alpha = & E\left[E[y_i | d_i = 1, x_i] - E[y_i | d_i = 0 , x_i]\right] \\
-  \alpha = & E\left[d_i \frac{y_i - E[y_i | d_i = 1,
-      x_i]}{P(d=1|x_i)} + (1-d_i)\frac{y_i - E[y_i | d_i = 0,
-      x_i]}{1-P(d=1|x_i)} + E[y_i | d_i = 1, x_i] - E[y_i | d_i = 0 ,
+  \alpha = & \Er\left[\frac{y_i d_i}{\Pr(d = 1 | x_i)} + \frac{y_i
+      (1-d_i)}{1-\Pr(d=1|x_i)} \right] \\
+  \alpha = & \Er\left[\Er[y_i | d_i = 1, x_i] - \Er[y_i | d_i = 0 , x_i]\right] \\
+  \alpha = & \Er\left[d_i \frac{y_i - \Er[y_i | d_i = 1,
+      x_i]}{\Pr(d=1|x_i)} + (1-d_i)\frac{y_i - \Er[y_i | d_i = 0,
+      x_i]}{1-\Pr(d=1|x_i)} + \Er[y_i | d_i = 1, x_i] - \Er[y_i | d_i = 0 ,
       x_i]\right] 
 \end{align*}
 $$
@@ -161,18 +213,18 @@ $$
     estimators. For example, to use the first formula, we could
     estimate a logit model for the probability of treatment, 
     $$
-        \hat{P}(d=1|x_i) = \frac{e^{X_i' \hat{\beta}}}{1+e^{X_i'\hat{\beta}}}
+        \hat{\Pr}(d=1|x_i) = \frac{e^{X_i' \hat{\beta}}}{1+e^{X_i'\hat{\beta}}}
     $$    
     where, as above, $X$ is a some chosen transformation of
     $x_i$. Then we simply take an average to estimate $\alpha$.
     $$
-    \hat{\alpha} = \frac{1}{n} \sum_{i=1}^n \frac{y_i d_i}{\hat{P}(d=1|x_i)} + 
-    \frac{y_i(1-d_i)} {1-\hat{P}(d=1|x_i)}        
+    \hat{\alpha} = \frac{1}{n} \sum_{i=1}^n \frac{y_i d_i}{\hat{\Pr}(d=1|x_i)} + 
+    \frac{y_i(1-d_i)} {1-\hat{\Pr}(d=1|x_i)}        
     $$
     As in the partially linear model, estimating the parameter of
     interest, $\alpha$, requires estimating a potentially high
     dimensional nuisance parameter, in this case
-    $\hat{P}(d=1|x)$. Similarly, the second expression would require
+    $\hat{\Pr}(d=1|x)$. Similarly, the second expression would require
     estimating conditional expectations of $y$ as nuisance
     parameters. The third expression requires estimating both
     conditional expecations of $y$ and $d$. 
@@ -182,11 +234,34 @@ $$
     make using it essential when very flexible machine learning
     estimators for the conditional expectations are used. 
     
-    TODO: add empirical examples of heart catheterization from
-    @athey2017 and abortion & crime from @donahueXXX as reanalyzed by
-    @chernozhukov2014. 
-    
-    TODO? discuss why it's called matching.        
+    The origin of the name "matching" can be seen in the second
+    expression. One way to estimate that expression would be to take
+    each person in the treatment group, find someone with the same (or
+    nearly the same) $x$
+    in the control group, difference the outcome of this matched pair,
+    and then average over the whole sample. (Actually this gives the
+    average treatment effect on the treated. For the ATE, you would
+    also have to do the same with roles of the groups switched and
+    average all the differences.) When $x$ is multi-dimensional, there
+    is some ambiguity about what it means for two $x$ values to be
+    nearly the same. An important insight of @rosenbaum1983 is that it
+    is sufficient to match on the propensity score, $P(d=1|x)$,
+    instead. 
+        
+    **Example: effectiveness of heart catheterization**
+
+    @connors1996 use matching to estimate the effectiveness of heart
+    catheterization in critically ill patients. Their dataset contains
+    5735 patients and 72 covariates. @athey2017b reanalyze this data
+    using a variety of machine learning methods.
+
+<div class="alert alert-danger">  
+**References:** @imbens2004 reviews the traditional econometric
+literature on matching. @imbens2015 focuses on practical advice
+for matching and includes a brief mention of incorporating machine
+learning.
+</div>
+
 </aside>
 
 ---
@@ -199,7 +274,7 @@ $$
 
 ## Example: IV
 
-- 
+-  
 
 ---
 
@@ -212,6 +287,7 @@ $$
 - Surveys on machine learning in econometrics
     - **@athey2017**
     - @mullainathan2017
+    - @athey2018
     - @athey2017b
     - @athey2015
     
@@ -256,23 +332,59 @@ $$
     - @athey2016b
 
 <aside class="notes">
-    There is considerable overlap among these categories. The papers
-    listed under Neyman orthogonalization all include use of Lasso and
-    some include random forests. 
+There is considerable overlap among these categories. The papers
+listed under Neyman orthogonalization all include use of lasso and
+some include random forests. The papers on lasso all involve some
+use of orthogonalization.
 </aside>
 
 ---
 
-<!-- ---------------------------------------------------------------------- -->
-
 # Introduction to machine learning 
+
+
+<aside class="notes">
+<div class="alert alert-danger">
+@friedman2008 and @james2013 are commonly recommended textbooks on
+machine learning. @james2013 is less technical of the two, but neither
+book is especially difficult.
+</div>
+</aside>
 
 ---
 
-## Predicting pipeline revenues
+## Some prediction examples 
 
 - Machine learning is tailored for prediction, let's look at some data
-  to find out
+  and see how well it works
+
+---
+
+### Predicting house prices
+
+- Example from @mullainathan2017
+- Training on 10000 observations from AHS
+- Predict log house price using 150 variables
+- Holdout sample of 41808
+
+---
+```{r, msresults, results='hide', cache=TRUE}
+# use ms-reproduce.R from course git repo to download and run Mullainathon & Spiess data and code to
+# create jepfittedmodels-table1.csv. Be aware that this will take many hours.
+#tab <- read.csv("jepfittedmodels-table1.csv")
+tab <- matrix(NA,nrow=3,ncol=5)
+library(kableExtra)
+```
+```{r, results='as-is', cache=TRUE}
+kable_styling(kable(tab, caption="Performance of different algorithms in predicting housing values",
+                    format="html"),
+              bootstrap_options = c("striped", "hover", "condensed",
+                                    "responsive"), full_width=TRUE)
+```
+---
+
+### Predicting pipeline revenues
+
 - Data on US natural gas pipelines 
    - Combination of FERC Form 2, EIA Form 176, and other sources,
      compiled by me 
@@ -307,15 +419,9 @@ library(GGally)
 ggpairs(data[,c("transProfit","transPlant_bal_beg_yr","cityPrice","wellPrice")],
         lower=list(continuous="smooth"))  + theme_minimal()
 ```
-
-<aside class="notes">    
-    Anytime you start working with a new dataset, you should look at
-    some summary statistics and exploratory figures. 
-</aside>
-
 ---
 
-## Predicting pipeline revenues : methods
+### Predicting pipeline revenues : methods
 
 - OLS : 67 covariates (year dummies and state(s) create a lot)
 - Lasso 
@@ -331,7 +437,6 @@ ggpairs(data[,c("transProfit","transPlant_bal_beg_yr","cityPrice","wellPrice")],
     forests these as black boxes that generate predictions from
     data. We will go into more detail soon.
 </aside>
---- 
 
 ```{r, pipeline-predict, cache=TRUE}
 ## Create X matrix for OLS and random forests
@@ -343,7 +448,6 @@ fmla <- paste(yname,"~",paste(xnames,collapse=" + "),"+ as.factor(report_yr)")
 ols <- lm(fmla,data=data,x=TRUE,y=TRUE)
 X <- ols$x[,!(colnames(ols$x) %in% c("(Intercept)")) &
             !is.na(ols$coefficients)]
-print(dim(X))
 y <- ols$y
 train <- runif(nrow(X))<0.75
 
@@ -363,7 +467,6 @@ fmla.l <- paste(yname,"~ (",
 reg <- lm(fmla.l, data=data, x=TRUE,y=TRUE)
 Xl <- reg$x[,!(colnames(reg$x) %in% c("(Intercept)")) &
              !is.na(reg$coefficients)]
-print(dim(Xl))
 lasso <- cv.glmnet(Xl[train,],y[train],alpha=1,parallel=FALSE,
                    standardize=TRUE, intercept=TRUE, nfolds = 50)
 y.hat.lasso <- predict(lasso, Xl, s=lasso$lambda.1se, type="response")
@@ -387,7 +490,7 @@ ggplot(data=df,aes(x=y,y=y.hat,colour=method,shape=train)) +  geom_point(alpha=0
 
 ---
 
-```{r, pipelinePredSummary, echo=FALSE, cache=TRUE, results='as-is'}
+```{r, pipelinePredSummary, cache=TRUE, results='as-is'}
 library(kableExtra)
 fn <- function(df)  with(df,c(mean((y.hat - y)^2)/var(y),
                               mean(abs(y.hat - y))/mean(abs(y-mean(y)))))
@@ -403,45 +506,167 @@ colnames(tab2) <- c("OLS","Lasso","Random forest")
 kable_styling(kable(tab1, caption="Training sample", format="html"),
               bootstrap_options = c("striped", "hover", "condensed",
               "responsive"), full_width=F)
-kable_styling(kable(tab2, caption="Evaluation sample", format="html"),
+kable_styling(kable(tab2, caption="Hold-out sample", format="html"),
               bootstrap_options = c("striped", "hover", "condensed",
               "responsive"), full_width=F)
 ```
+
+<aside class="notes">
+In this table, relative MSE is the mean squared error relative to the
+variance of $y$, that is
+$$
+    \text{relative MSE} = \frac{\En[(y_i - \hat{y}_i)^2]} {\En[ (y_i - \bar{y})^2]}.
+$$
+It is equal to $1-R^2$. Similarly, relative MAE is
+$$
+    \text{relative MAE} = \frac{\En[|y_i - \hat{y}_i|]} {\En[|y_i - \bar{y}|]}.
+$$
+
+<div class="alert alert-danger">
+$\En$ denotes the empirical expectation, $\En[y_i] = \frac{1}{n}\sum_{i=1}^n y_i$.
+</div>
+</aside>
 ---
 
-## Lasso
+## Lasso 
+
+- Lasso solves a penalized (regularized) regression problem
+$$ 
+\hat{\beta} = \argmin_\beta \En [ (y_i - x_i'\beta)^2 ] +
+\frac{\lambda}{n} \norm{ \hat{\Psi} \beta}_1 
+$$
+- Penalty parameter $\lambda$
+- Diagonal matrix $\hat{\Psi}  = diag(\hat{\psi})$ 
+- Dimension of $x_i$ is $p$ and implicitly depends on $n$
+    - can have $p >> n$
+
+<aside class="notes">
+We are following the notation used in @hdm. Note that this
+vignette has been updated since it was published in the R Journal. To
+obtain the most recent version, install the hdm package in R, load it,
+and then open the vignette.
+
+```{r, eval=FALSE}
+install.packages("hdm")
+library(hdm)
+vignette("hdm_introduction")
+```
+
+The diagonal matrix $\hat{\Psi}$ is used to make the estimator
+invariant to scaling of $x_i$, and to allow for heteroskedasticity.
+If reading about Lasso or using code from other authors, be careful
+some do not include $\hat{\Psi}$ and use $\lambda$ instead of
+$\frac{\lambda}{n}$. 
+
+The choice of penalty (or regularization) parameter, $\lambda$, is
+important. When $\lambda = 0$, Lasso is the same as OLS. As $\lambda$
+increases, the Lasso estimates will shrink toward 0. Some of them will
+become exactly 0. As $\lambda$ increases more, more and more
+components of $\hat{\beta}$ will be exactly $0$. Most machine learning
+methods involve some form of regularization with an associated
+regularization parameter. In choosing the regularization parameter, we
+face a bias-variance tradeoff. As $\lambda$ increases, variance
+decreases, but bias increases. 
+
+Machine learning algorithms typically choose regularization parameters
+through cross-validation. Although
+cross-validation leads to good predictive performance, the statistical
+properties are not always known. @hdm say, "In high dimensional settings
+cross-validation is very popular; but it lacks a theoretical
+justification for use in the present context." 
+
+</aside>
 
 ---
 
-## Example showing good for prediction
+### Statistical properties of Lasso
+
+- Model :
+$$ 
+y_i = x_i'\beta_0 + \epsilon_i
+$$ 
+    - $\Er[x_i \epsilon_i] = 0$
+    - $\beta_0 \in \R^n$
+    - $p$ may increase with $n$
+    - $p$, $\beta_0$, $x_i$, and $s$ implicitly depend on $n$
+- Sparsity $s$ 
+    - Exact : $\norm{\beta_0}_0 = s = o(n)$
+    - Approximate : $|\beta_{0,j}| < Aj^{-a}$, $a > 1/2$, $s \propto n^{1/(2a)}$
+
+<aside class="notes">
+$\norm{\beta}_0$ is the number of non-zero components of $\beta$. 
+
+Lasso can also be applied to nonparametric regression models such as
+$$ 
+y_i = f(z_i) + \epsilon_i 
+$$
+Let $x_i = P(z_i)$ be a set of transformations of $z$, such as powers
+or splines. Define $\beta_0$ as the solution to the oracle problem
+$$
+\beta_0 = \argmin_\beta \En[(f(z_i) - x_i'\beta)^2] +
+\frac{\lambda}{n} \norm{\beta}_0
+$$
+and $c_s^2$ to be the minimized value. If we want to estimate $f(z)$
+instead of $x_i'\beta_0$, then we must add $c_s$ to the rate of
+convergence below. There will then be some tradeoff between estimation
+error increasing with $s$ and approximation error ($c_s$) decreasing
+with $s$.
+</aside>
+---
+
+### Rate of convergence
+
+- If $ \lambda = 2c \sqrt{n} \Phi^{-1}(1-\gamma/(2p)) $, then
+$$ 
+    \sqrt{\En[x_i'(\hat{\beta} - \beta_0) ] } \lesssim \sqrt{ (s/n)
+    \log p }
+$$
+with probability $1-\gamma$
+
+- near-oracle rate
 
 ---
 
-## Partially linear model
+### Other statistical properties
 
----
+- Inference on $\beta$: difficult, not the goal in our motivating
+  examples
+    - See @lee2016, @taylor2017
 
-## ATE with unconfoundedness
-
-- role of orthogonality
-
----
-
-## IV with Lasso
-
----
-
-<!-- ---------------------------------------------------------------------- -->
-
-# Random forests
+- Model selection: not the goal in our motivating examples
+    - Under stronger conditions, Lasso correctly selects the nonzero
+      components of $\beta_0 
+    - See @belloni2011
 
 ---
 
 ## Random forests
 
---- 
+---
 
-## Example showing good for prediction
+### Regression trees
+
+---
+
+### Generalized random forests
+
+<!-- ---------------------------------------------------------------------- -->
+
+# Using machine learning to estimate causal effects
+
+---
+
+## Partially linear model with lasso
+
+---
+
+## IV with lasso
+
+---
+
+## ATE 
+
+- role of orthogonality
 
 ---
 
@@ -454,12 +679,11 @@ kable_styling(kable(tab2, caption="Evaluation sample", format="html"),
 
 - @athey2016, @wager2018, etc
 
-<!-- ---------------------------------------------------------------------- -->
-
-# Double debiased machine learning
+## Double debiased machine learning
 
 - @chernozhukov2016, @chernozhukov2017
 
+---
 
 # Bibliography
 
