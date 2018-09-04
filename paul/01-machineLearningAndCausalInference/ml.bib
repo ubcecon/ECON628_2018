@@ -56,6 +56,22 @@ url = {https://arxiv.org/abs/1608.00060}
 }
 
 
+@article{chernozhukov2018,
+author = {Chernozhukov, Victor and Chetverikov, Denis and Demirer, Mert and Duflo, Esther and Hansen, Christian and Newey, Whitney and Robins, James},
+title = {Double/debiased machine learning for treatment and structural parameters},
+journal = {The Econometrics Journal},
+volume = {21},
+number = {1},
+year = {2018},
+pages = {C1-C68},
+doi = {10.1111/ectj.12097},
+url = {https://onlinelibrary.wiley.com/doi/abs/10.1111/ectj.12097},
+eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1111/ectj.12097},
+abstract = {Summary We revisit the classic semi-parametric problem of inference on a low-dimensional parameter θ0 in the presence of high-dimensional nuisance parameters η0. We depart from the classical setting by allowing for η0 to be so high-dimensional that the traditional assumptions (e.g. Donsker properties) that limit complexity of the parameter space for this object break down. To estimate η0, we consider the use of statistical or machine learning (ML) methods, which are particularly well suited to estimation in modern, very high-dimensional cases. ML methods perform well by employing regularization to reduce variance and trading off regularization bias with overfitting in practice. However, both regularization bias and overfitting in estimating η0 cause a heavy bias in estimators of θ0 that are obtained by naively plugging ML estimators of η0 into estimating equations for θ0. This bias results in the naive estimator failing to be consistent, where N is the sample size. We show that the impact of regularization bias and overfitting on estimation of the parameter of interest θ0 can be removed by using two simple, yet critical, ingredients: (1) using Neyman-orthogonal moments/scores that have reduced sensitivity with respect to nuisance parameters to estimate θ0; (2) making use of cross-fitting, which provides an efficient form of data-splitting. We call the resulting set of methods double or debiased ML (DML). We verify that DML delivers point estimators that concentrate in an -neighbourhood of the true parameter values and are approximately unbiased and normally distributed, which allows construction of valid confidence statements. The generic statistical theory of DML is elementary and simultaneously relies on only weak theoretical requirements, which will admit the use of a broad array of modern ML methods for estimating the nuisance parameters, such as random forests, lasso, ridge, deep neural nets, boosted trees, and various hybrids and ensembles of these methods. We illustrate the general theory by applying it to provide theoretical properties of the following: DML applied to learn the main regression parameter in a partially linear regression model; DML applied to learn the coefficient on an endogenous variable in a partially linear instrumental variables model; DML applied to learn the average treatment effect and the average treatment effect on the treated under unconfoundedness; DML applied to learn the local average treatment effect in an instrumental variables setting. In addition to these theoretical applications, we also illustrate the use of DML in three empirical examples.}
+}
+
+
+
 @article{chernozhukov2017,
 Author = {Chernozhukov, Victor and Chetverikov, Denis and Demirer, Mert and Duflo, Esther and Hansen, Christian and Newey, Whitney},
 Title = {Double/Debiased/Neyman Machine Learning of Treatment Effects},
@@ -246,6 +262,16 @@ URL = {http://www.aeaweb.org/articles?id=10.1257/jep.28.2.29}}
   url = {http://www.nber.org/econometrics_minicourse_2015/}
 }
 
+@misc{athey2018,
+  title={Machine learning and econometrics},
+  author={Athey, Susan and Imbens, Guido},
+  year={2018},
+  publisher={AEA Continuing Education },
+  url = {https://www.aeaweb.org/conference/cont-ed/2018-webcasts}
+}
+
+
+
 @article {athey2016b,
 	author = {Athey, Susan and Imbens, Guido},
 	title = {Recursive partitioning for heterogeneous causal effects},
@@ -409,3 +435,37 @@ eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/cjs.11313},
 abstract = {Abstract We present a new method for post-selection inference for (lasso)'penalized likelihood models, including generalized regression models. Our approach generalizes the post-selection framework presented in Lee et al. (2013). The method provides P-values and confidence intervals that are asymptotically valid, conditional on the inherent selection done by the lasso. We present applications of this work to (regularized) logistic regression, Cox's proportional hazards model, and the graphical lasso. We do not provide rigorous proofs here of the claimed results, but rather conceptual and theoretical sketches. The Canadian Journal of Statistics 46: 41–61; 2018 © 2017 Statistical Society of Canada}
 }
 
+@article{caner2018,
+title = "Asymptotically honest confidence regions for high dimensional parameters by the desparsified conservative Lasso",
+ journal = "Journal of Econometrics",
+volume = "203",
+number = "1",
+pages = "143 - 168",
+year = "2018",
+issn = "0304-4076",
+doi =
+"https://doi.org/10.1016/j.jeconom.2017.11.005",
+url =
+"http://www.sciencedirect.com/science/article/pii/S0304407617302282",
+author = "Mehmet Caner and Anders Bredahl Kock",
+keywords = "Conservative Lasso, Honest inference, High-dimensional data, Uniform inference, Confidence intervals, Tests"
+}
+
+    @article{angrist1991,
+     jstor_articletype = {research-article},
+     title = {Does Compulsory School Attendance Affect Schooling and Earnings?},
+     author = {Angrist, Joshua D. and Krueger, Alan B.},
+     journal = {The Quarterly Journal of Economics},
+     jstor_issuetitle = {},
+     volume = {106},
+     number = {4},
+     jstor_formatteddate = {Nov., 1991},
+     pages = {pp. 979-1014},
+     url = {http://www.jstor.org/stable/2937954},
+     ISSN = {00335533},
+     abstract = {We establish that season of birth is related to educational attainment because of school start age policy and compulsory school attendance laws. Individuals born in the beginning of the year start school at an older age, and can therefore drop out after completing less schooling than individuals born near the end of the year. Roughly 25 percent of potential dropouts remain in school because of compulsory schooling laws. We estimate the impact of compulsory schooling on earnings by using quarter of birth as an instrument for education. The instrumental variables estimate of the return to education is close to the ordinary least squares estimate, suggesting that there is little bias in conventional estimates.},
+     language = {English},
+     year = {1991},
+     publisher = {Oxford University Press},
+     copyright = {Copyright © 1991 Oxford University Press},
+    }

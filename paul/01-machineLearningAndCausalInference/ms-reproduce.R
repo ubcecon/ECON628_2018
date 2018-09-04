@@ -37,3 +37,22 @@ if (!files.exists("jepfittedmodels-ensemble")) {
 }
 source("MullainathanSpiess/4_table1.R")
 
+fulldata$id <- 1:nrow(fulldata)
+df <- melt(fulldata[,c(1:7,ncol(fulldata))],
+           id=c("id","holdout","LOGVALUE"),
+           variable_name="Method")
+df$holdout[df$holdout==FALSE] <- "Training"
+df$holdout[df$holdout==TRUE] <- "Holdout"
+df$holdout <- as.factor(df$holdout)
+names(df)[names(df)=="value"] <- "Prediction"
+df$Error <- df$LOGVALUE - df$Prediction
+fig <- ggplot(data=df, aes(x=Error, colour=Method)) +
+  geom_density() + theme_minimal() +
+  xlim(quantile(df$Error,c(0.02,0.98))) +
+  facet_grid(holdout ~ .)
+
+fig2 <- ggplot(data=df, aes(x=LOGVALUE, y=Prediction,
+                            colour=Method, shape=holdout)) +
+  geom_point(alpha=0.5) + theme_minimal() + geom_line(aes(y=LOGVALUE))
+
+save(fig,fig2, file="jeperrorfig.RData")
