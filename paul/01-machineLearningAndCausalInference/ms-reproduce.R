@@ -31,13 +31,19 @@ tryCatch(source("1_loadpredictiontools.R"),
 # if there's errors, you likely need to install the missing
 # packages,e.g. 'install.packages(c("xgboost","randomForest"))'
 
-if (!files.exists("jepfittedmodels-ensemble")) {
+if (!file.exists("jepfittedmodels-ensemble")) {
   # Fit models: this takes awhile
   source("MullainathanSpiess/3_fitmodels.R")
 }
-source("MullainathanSpiess/4_table1.R")
+if (!file.exists("table1.Rdata")) {
+  source("MullainathanSpiess/4_table1.R")
+  save(list=ls(), file="table1.Rdata")
+} else {
+  load("table1.Rdata")
+}
 
 fulldata$id <- 1:nrow(fulldata)
+library(reshape)
 df <- melt(fulldata[,c(1:7,ncol(fulldata))],
            id=c("id","holdout","LOGVALUE"),
            variable_name="Method")
@@ -56,3 +62,6 @@ fig2 <- ggplot(data=df, aes(x=LOGVALUE, y=Prediction,
   geom_point(alpha=0.5) + theme_minimal() + geom_line(aes(y=LOGVALUE))
 
 save(fig,fig2, file="jeperrorfig.RData")
+
+
+ahs <- readRDS("ahs2011forjep.rdata")

@@ -43,6 +43,14 @@ output      :
 
 ---
 
+<a rel="license"
+href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative
+Commons License" style="border-width:0"
+src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png"
+/></a><br />This work is licensed under a <a rel="license"
+href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+Commons Attribution-ShareAlike 4.0 International License</a>.
+
 $$
 \def\indep{\perp\!\!\!\perp}
 \def\Er{\mathrm{E}}
@@ -203,10 +211,10 @@ $$
   \theta = & \Er\left[\frac{y_i d_i}{\Pr(d = 1 | x_i)} + \frac{y_i
       (1-d_i)}{1-\Pr(d=1|x_i)} \right] \\
   \theta = & \Er\left[\Er[y_i | d_i = 1, x_i] - \Er[y_i | d_i = 0 , x_i]\right] \\
-  \theta = & \Er\left[d_i \frac{y_i - \Er[y_i | d_i = 1,
+  \theta = & \Er\left[ \begin{array}{l} d_i \frac{y_i - \Er[y_i | d_i = 1,
       x_i]}{\Pr(d=1|x_i)} + (1-d_i)\frac{y_i - \Er[y_i | d_i = 0,
-      x_i]}{1-\Pr(d=1|x_i)} + \Er[y_i | d_i = 1, x_i] - \Er[y_i | d_i = 0 ,
-      x_i]\right]
+      x_i]}{1-\Pr(d=1|x_i)} + \\ + \Er[y_i | d_i = 1, x_i] - \Er[y_i | d_i = 0 ,
+      x_i]\end{array}\right]
 \end{align*}
 $$
 
@@ -265,16 +273,13 @@ literature on matching. @imbens2015 focuses on practical advice
 for matching and includes a brief mention of incorporating machine
 learning.
 </div>
-
-</aside>
-
----
-
-<aside class = "notes">
+    
     Both the partially linear model and treatment effects model can be
     extended to situations with endogeneity and instrumental
     variables.
 </aside>
+
+---
 
 ## Example: IV
 
@@ -356,15 +361,15 @@ $$
     y_i = \theta_0 d_i + f_0(x_i) + \epsilon_i
 $$
 
-Compare the estimates
+- Compare the estimates from
 
-- $0 = \En[d_i(y_i - \tilde{\theta} d_i - \hat{f}(x_i)) ]$
+    1. $\En[d_i(y_i - \tilde{\theta} d_i - \hat{f}(x_i)) ] = 0$
 
-and
-
-- $0 = \En[(d_i - \hat{m}(x_i))(y_i - \hat{\mu}(x_i) -  \theta (d_i - \hat{m}(x_i)))]$
-
-where $m(x) = \Er[d|x]$ and $\mu(y) = \Er[y|x]$
+    and
+    
+    2. $\En[(d_i - \hat{m}(x_i))(y_i - \hat{\mu}(x_i) -  \theta (d_i - \hat{m}(x_i)))] = 0$
+    
+    where $m(x) = \Er[d|x]$ and $\mu(y) = \Er[y|x]$
 
 <aside class="notes">
 **Example: partially linear model**
@@ -553,8 +558,8 @@ book is especially difficult.
 
 ## Some prediction examples
 
-- Machine learning is tailored for prediction, let's look at some data
-  and see how well it works
+Machine learning is tailored for prediction, let's look at some data
+and see how well it works
 
 ---
 
@@ -566,6 +571,25 @@ book is especially difficult.
 - Holdout sample of 41808
 
 ---
+
+### AHS variables{-}
+```{r, ahsvars, cache=TRUE}
+ahs <- readRDS("ahs2011forjep.rdata")$df
+print(summary(ahs))
+```
+---
+
+```{r, ahsfig, cache=TRUE, warning=FALSE,message=FALSE}
+library(GGally)
+ggpairs(ahs[,c("LOGVALUE","ROOMS", "LOT","UNITSF","BUILT")],
+        lower=list(continuous="points", combo="facethist",
+                   discrete="facetbar"),
+        diag=list(continuous="barDiag",discrete="barDiag")) + 
+  theme_minimal()
+```
+
+---
+
 ```{r, msresults, results='hide', cache=TRUE}
 # use ms-reproduce.R from course git repo to download and run Mullainathon & Spiess data and code to
 # create jepfittedmodels-table1.csv. Be aware that this will take many hours.
@@ -586,7 +610,7 @@ kable_styling(kable(tab,
 
 ---
 
-```{r, cache=TRUE}
+```{r, cache=TRUE, warning=FALSE}
 library(ggplot2)
 load(file="jeperrorfig.RData")
 print(fig)
@@ -594,7 +618,7 @@ print(fig)
 
 ---
 
-```{r, cache=TRUE}
+```{r, cache=TRUE, warning=FALSE}
 load(file="jeperrorfig.RData")
 print(fig2)
 ```
@@ -690,7 +714,7 @@ Xl <- reg$x[,!(colnames(reg$x) %in% c("(Intercept)")) &
              !is.na(reg$coefficients)]
 lasso <- cv.glmnet(Xl[train,],y[train],alpha=1,parallel=FALSE,
                    standardize=TRUE, intercept=TRUE, nfolds = 50)
-y.hat.lasso <- predict(lasso, Xl, s=lasso$lambda.1se, type="response")
+y.hat.lasso <- predict(lasso, Xl, s=lasso$lambda.min, type="response")
 df <- rbind(df,  data.frame(y=y, y.hat=as.vector(y.hat.lasso),
                             train=train, method="lasso"))
 
@@ -816,7 +840,9 @@ through cross-validation. Although
 cross-validation leads to good predictive performance, the statistical
 properties are not always known. @hdm say, "In high dimensional settings
 cross-validation is very popular; but it lacks a theoretical
-justification for use in the present context."
+justification for use in the present context." However, there has been
+some recent progress on convergence rates for Lasso with
+cross-validation, see @chetverikov2017.
 
 The diagonal matrix $\hat{\Psi}$ is used to make the estimator
 invariant to scaling of $x_i$, and to allow for heteroskedasticity.
@@ -892,10 +918,11 @@ $$
 \frac{\lambda}{n} \norm{\beta}_0
 $$
 and $c_s^2$ to be the minimized value. If we want to estimate $f(z)$
-instead of $x_i'\beta_0$, then we must add $c_s$ to the rate of
+instead of $x_i'\beta_0$, then we must add $c_s$ to the rates of
 convergence below. There will then be some tradeoff between estimation
 error increasing with $s$ and approximation error ($c_s$) decreasing
 with $s$.
+
 </aside>
 
 ---
@@ -905,24 +932,24 @@ with $s$.
 - With $\lambda = 2c \sqrt{n} \Phi^{-1}(1-\gamma/(2p))$
 $$
 \sqrt{\En[(x_i'(\hat{\beta}^{lasso} - \beta_0))^2 ] } \lesssim_P \sqrt{ (s/n)
-\log (p \vee n) },
+\log (p) },
 $$
 
 $$
 \norm{\hat{\beta}^{lasso} - \beta_0}_2 \lesssim_P \sqrt{ (s/n)
-\log (p \vee n) },
+\log (p) },
 $$
 
 and
 
 $$
     \norm{\hat{\beta}^{lasso} - \beta_0}_1 \lesssim_P \sqrt{ (s^2/n)
-\log (p \vee n) }
+\log (p) }
 $$
 
     - Constant $c>1$
 
-    - Small $\gamma \to 0$ with $n$, and $\log(1/\gamma) \lesssim \log(p \vee n)$
+    - Small $\gamma \to 0$ with $n$, and $\log(1/\gamma) \lesssim \log(p)$
 
     - Rank like condition on $x_i$
 
@@ -959,6 +986,17 @@ $$
 $$
 
 </aside>
+
+---
+
+### Rate of convergence{-}
+
+- Using cross-validation to choose $\lambda$ known bounds are worse
+    - With Gaussian errors: $\sqrt{\En[(x_i'(\hat{\beta}^{lasso} - \beta_0))^2 ] } \lesssim_P \sqrt{ (s/n)
+\log (p) } \log(pn)^{7/8}$,
+    - Without Gaussian error $\sqrt{\En[(x_i'(\hat{\beta}^{lasso} -
+      \beta_0))^2 ] } \lesssim_P \left( \frac{s \log(pn)^2}{n} \right)^{1/4}$
+    - @chetverikov2017
 
 ---
 
@@ -1007,6 +1045,19 @@ details.
 ---
 
 ### Regression trees
+
+
+
+---
+
+### Random forests
+
+---
+
+### Rate of convergence
+
+- @biau2012 
+- @wager2015
 
 ---
 

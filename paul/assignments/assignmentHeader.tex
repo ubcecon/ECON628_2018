@@ -1,0 +1,187 @@
+\documentclass[11pt,reqno,letter]{amsart}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+%\usepackage{epstopdf}
+\usepackage{hyperref}
+\hypersetup{colorlinks=false}
+\usepackage[left=1in,right=1in,top=0.9in,bottom=0.9in]{geometry}
+\usepackage{multirow}
+\usepackage{verbatim}
+\usepackage{fancyhdr}
+\usepackage{mdframed}
+%\usepackage[small,compact]{titlesec} 
+\usepackage{listings}
+\usepackage{ccicons}
+
+\usepackage{natbib}
+\renewcommand{\cite}{\citet}
+
+%\usepackage{pxfonts}
+%\usepackage{isomath}
+%\usepackage{mathpazo}
+\usepackage{newpxmath}
+\usepackage{newpxtext}
+%\usepackage{arev} %     (Arev/Vera Sans)
+%\usepackage{eulervm} %_   (Euler Math)
+%\usepackage{fixmath} %  (Computer Modern)
+%\usepackage{hvmath} %_   (HV-Math/Helvetica)
+%\usepackage{tmmath} %_   (TM-Math/Times)
+%\usepackage{cmbright}
+%\usepackage{ccfonts} \usepackage[T1]{fontenc}
+%\usepackage[garamond]{mathdesign}
+\usepackage{color}
+\usepackage[normalem]{ulem}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{conjecture}{Conjecture}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{proposition}{Proposition}[section]
+\theoremstyle{definition}
+\newtheorem{assumption}{}[section]
+%\renewcommand{\theassumption}{C\arabic{assumption}}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{step}{Step}[section]
+\newtheorem{remark}{Comment}[section]
+\newtheorem{example}{Example}[section]
+\newtheorem*{example*}{Example}
+
+\linespread{1.0}
+
+\pagestyle{fancy}
+%\renewcommand{\sectionmark}[1]{\markright{#1}{}}
+\fancyhead{}
+\fancyfoot{} 
+%\fancyhead[LE,LO]{\tiny{\thepage}}
+\fancyhead[CE,CO]{\tiny{\rightmark}}
+\fancyfoot[C]{\small{\thepage}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\fancypagestyle{plain}{%
+\fancyhf{} % clear all header and footer fields
+\fancyfoot[C]{\small{\thepage}} % except the center
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}}
+
+\makeatletter
+\renewcommand{\@maketitle}{
+  \null
+  \begin{center}%
+    \rule{\linewidth}{1pt} 
+    {\Large \textbf{\textsc{\@title}}} \par
+    {\normalsize \textsc{Paul Schrimpf}} \par
+    {\normalsize \textsc{\@date}} \par
+    {\small \textsc{University of British Columbia}} \par
+    {\small \textsc{Economics 326}} \par
+    \ccbysa\footnote{This work is licensed under a 
+      \href{http://creativecommons.org/licenses/by-sa/4.0/}{Creative
+        Commons Attribution-ShareAlike 4.0 International License}}
+    \par
+
+    \rule{\linewidth}{1pt} 
+  \end{center}%
+  \par \vskip 0.9em
+}
+\makeatother
+
+\newcommand{\argmax}{\operatornamewithlimits{arg\,max}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\,min}}
+\def\inprobLOW{\rightarrow_p}
+\def\inprobHIGH{\,{\buildrel p \over \rightarrow}\,} 
+\def\inprob{\,{\inprobHIGH}\,} 
+\def\indist{\,{\buildrel d \over \rightarrow}\,} 
+\def\F{\mathbb{F}}
+\def\R{\mathbb{R}}
+\newcommand{\gmatrix}[1]{\begin{pmatrix} {#1}_{11} & \cdots &
+    {#1}_{1n} \\ \vdots & \ddots & \vdots \\ {#1}_{m1} & \cdots &
+    {#1}_{mn} \end{pmatrix}}
+\newcommand{\iprod}[2]{\left\langle {#1} , {#2} \right\rangle}
+\newcommand{\norm}[1]{\left\Vert {#1} \right\Vert}
+\newcommand{\abs}[1]{\left\vert {#1} \right\vert}
+\renewcommand{\det}{\mathrm{det}}
+\newcommand{\rank}{\mathrm{rank}}
+\newcommand{\spn}{\mathrm{span}}
+\newcommand{\row}{\mathrm{Row}}
+\newcommand{\col}{\mathrm{Col}}
+\renewcommand{\dim}{\mathrm{dim}}
+\newcommand{\prefeq}{\succeq}
+\newcommand{\pref}{\succ}
+\newcommand{\seq}[1]{\{{#1}_n \}_{n=1}^\infty }
+\renewcommand{\to}{{\rightarrow}}
+\providecommand{\En}{\mathbb{E}_n}
+\providecommand{\Er}{{\mathrm{E}}}
+\providecommand{\var}{{\mathrm{Var}}}
+\providecommand{\cov}{{\mathrm{Cov}}}
+\providecommand{\corr}{{\mathrm{Corr}}}
+\providecommand{\svar}{{\widehat{\var}}}
+\providecommand{\scov}{{\widehat{\cov}}}
+\renewcommand{\Pr}{{\mathrm{P}}}
+\providecommand{\set}[1]{\left\{#1\right\}}
+\providecommand{\plim}{\operatornamewithlimits{plim}}
+\newcommand\indep{\protect\mathpalette{\protect\independenT}{\perp}}
+\def\independenT#1#2{\mathrel{\setbox0\hbox{$#1#2$}%
+    \copy0\kern-\wd0\mkern4mu\box0}} 
+\providecommand{\avg}{{\frac{1}{n} \sum_{i=1}^n}}
+\providecommand{\sumin}{{\sum_{i=1}^n}}
+
+\providecommand{\bols}{{\hat{\beta}^{\mathrm{OLS}}}}
+\providecommand{\biv}{{\hat{\beta}^{\mathrm{IV}}}}
+\providecommand{\btsls}{{\hat{\beta}^{\mathrm{2SLS}}}}
+
+\newtheoremstyle{problem}% name
+{12pt}% Space above
+{5pt}% Space below
+{}% Body font
+{}% Indent amount
+{\bfseries}% Theorem head font
+{:}% Punctuation after theorem head
+{.5em}% Space after theorem head
+{}% Theorem head spec (can be left empty, meaning `normal')
+
+\theoremstyle{problem}
+\newtheorem{problem}{Problem}
+
+\newtheoremstyle{solution}% name
+{2pt}% Space above
+{12pt}% Space below
+{}% Body font
+{}% Indent amount
+{\bfseries}% Theorem head font
+{:}% Punctuation after theorem head
+{.5em}% Space after theorem head
+{}% Theorem head spec (can be left empty, meaning `normal')
+\newtheorem{soln}{Solution}
+
+\newenvironment{solution}
+  {\begin{mdframed}\begin{soln}$\,$}
+  {\end{soln}\end{mdframed}}
+
+
+
+\lstset{language=R}
+\lstset{keywordstyle=\color[rgb]{0,0,1},                                        % keywords
+        commentstyle=\color[rgb]{0.133,0.545,0.133},    % comments
+        stringstyle=\color[rgb]{0.627,0.126,0.941}      % strings
+}       
+%\lstset{
+%  showstringspaces=false,       % not emphasize spaces in strings 
+%  columns=fixed,
+%  numbersep=3mm, numbers=left, numberstyle=\tiny,       % number style
+%  frame=none,
+%  framexleftmargin=6mm, xleftmargin=6mm         % tweak margins
+%}
+
+\definecolor{lightgray}{gray}{0.95}
+\lstset{
+  backgroundcolor=\color{lightgray},  
+  showstringspaces=false,       % not emphasize spaces in strings 
+  columns=fixed,
+  frame = single,
+  %numbersep=3mm, numbers=left, numberstyle=\tiny,       % numberstyle
+  basicstyle=\footnotesize\ttfamily
+  %frame=1mm,
+  %framexleftmargin=4mm, xleftmargin=4mm         % tweak margins
+}
