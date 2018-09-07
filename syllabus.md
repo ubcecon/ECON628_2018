@@ -15,7 +15,11 @@ This is a graduate topics course in applied econometrics and computational econo
 A key purpose of this class is to teach specific techniques, algorithms, and tools to ensure that students write robust, correct, and tested code - and hopefully open the research opportunities for students to move to the cutting edge of quantitative economics.  Beyond the necessary algorithms and new programming languages, another goal is to ensure that economists are using modern software engineering tools to allow collaboration -  as most projects involve multiple coauthors and research assistants.  Finally, all of the practice in this class will be done with the goal of showing how code used in research can be shared as open-source with the economics research community (and the scientific computing community as a whole).
 
 **Grading**
-While students will all have significant experience with Matlab, the only way to learn how to apply new programming languages and methods to economic problems is practice.  To aid in this, a significant portion of the grade will regular problem sets.  The remainder of the grade will be a computational project.
+The only way to learn how to apply new programming languages and
+methods to economic problems is practice.  To aid in this, a
+significant portion of the grade will be regular problem sets.  The
+remainder of the grade will be a computational project.
+
 
 - Nearly weekly problem sets: 50%
 - Final Project: 50%
