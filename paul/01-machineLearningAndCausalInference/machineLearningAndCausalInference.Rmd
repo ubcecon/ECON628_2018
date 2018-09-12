@@ -222,11 +222,11 @@ heterogeneity.
 - Estimatable formulae for ATE :
 $$
 \begin{align*}
-  \theta = & \Er\left[\frac{y_i d_i}{\Pr(d = 1 | x_i)} + \frac{y_i
+  \theta = & \Er\left[\frac{y_i d_i}{\Pr(d = 1 | x_i)} - \frac{y_i
       (1-d_i)}{1-\Pr(d=1|x_i)} \right] \\
   \theta = & \Er\left[\Er[y_i | d_i = 1, x_i] - \Er[y_i | d_i = 0 , x_i]\right] \\
   \theta = & \Er\left[ \begin{array}{l} d_i \frac{y_i - \Er[y_i | d_i = 1,
-      x_i]}{\Pr(d=1|x_i)} + (1-d_i)\frac{y_i - \Er[y_i | d_i = 0,
+      x_i]}{\Pr(d=1|x_i)} - (1-d_i)\frac{y_i - \Er[y_i | d_i = 0,
       x_i]}{1-\Pr(d=1|x_i)} + \\ + \Er[y_i | d_i = 1, x_i] - \Er[y_i | d_i = 0 ,
       x_i]\end{array}\right]
 \end{align*}
@@ -244,7 +244,7 @@ $$
 where, as above, $X$ is a some chosen transformation of
 $x_i$. Then we simply take an average to estimate $\theta$.
 $$
-\hat{\theta} = \frac{1}{n} \sum_{i=1}^n \frac{y_i d_i}{\hat{\Pr}(d=1|x_i)} +
+\hat{\theta} = \frac{1}{n} \sum_{i=1}^n \frac{y_i d_i}{\hat{\Pr}(d=1|x_i)} -
 \frac{y_i(1-d_i)} {1-\hat{\Pr}(d=1|x_i)}
 $$
 As in the partially linear model, estimating the parameter of
@@ -474,11 +474,12 @@ initial estimator, they are better behaved because $\Er[v|x] = 0$ and
 $\Er[\epsilon|x] = 0$. This makes it possible, but difficult to show
 that $\sqrt{n}b \to_p = 0$ and $\sqrt{n} c \to_p = 0$, see
 e.g. @belloni2014. However, the conditions on $\hat{m}$ and
-$\hat{\mu}$ are slightly restrictive, and appropriate conditions might
-not be known for all estimators.  @chernozhukov2018 describe a sample
-splitting modification to $\hat{\theta}$ that allows $\sqrt{n} b$ and
-$\sqrt{n} c$ to vanish under weaker conditions (essentially the same
-rate condition as needed for $\sqrt{n} d$ to vanish.)
+$\hat{\mu}$ needed to show this are slightly restrictive, and
+appropriate conditions might not be known for all estimators. 
+@chernozhukov2018 describe a sample splitting modification to
+$\hat{\theta}$ that allows $\sqrt{n} b$ and $\sqrt{n} c$ to vanish
+under weaker conditions (essentially the same rate condition as needed
+for $\sqrt{n} d$ to vanish.)
 
 The last term, $d$, is a considerable improvement upon the first
 estimator. Instead of involving the error in one estimate, it now
@@ -858,7 +859,7 @@ $$
 \frac{\lambda}{n} \norm{\beta}_1
 $$
 is equivalent to
-\hat{\beta}^{lasso} = \argmin_\beta \En [ (y_i - x_i'\beta)^2 ] \text{ s.t. }
+$$\hat{\beta}^{lasso} = \argmin_\beta \En [ (y_i - x_i'\beta)^2 ] \text{ s.t. }
 \norm{\beta}_1 \leq s
 $$
 for some $s$. In this problem, the boundary of the constraint set will
@@ -1087,6 +1088,33 @@ under approximate sparsity?
     - Under stronger conditions, Lasso correctly selects the nonzero
       components of $\beta_0$
     - See @belloni2011
+    
+<div class="notes">
+In the statistics literature on high dimensional and nonparametric
+estimation, you will come across the terms "adaptive" and "honest."
+Adaptivity of an estimator refers to the situation where the rate of
+convergence depends on some unknown parameter. In the case of Lasso,
+the sparsity index of the true model, $s$, is an unknown parameter
+affecting the rate of convergence. Without knowing or estimating $s$,
+Lasso attains the above rate of convergence for a wide range of
+admissable $s$. Thus, Lasso is adaptive to the unknown sparsity
+index. 
+
+"Honest" is a property of an inference method. A confidence region is
+honest if it has correct coverage for a large class of true
+models. For the Lasso, an honest confidence region would be valid for
+a wide range of sparsity, $s$. An honest, adaptive confidence region
+would be one that is valide for a wide range of $s$ and whose size
+shrinks as quickly as if $s$ were known. Achieving both adaptivity and
+honesty is impossible in the most general setting. For example,
+although an $\ell$ times differentiable function of a $p$ dimensional
+variable can be adaptively estimated at rate $n^{-\ell}{2\ell + p}$,
+@li1989 showed that an honest confidence region can contract at most
+at rate $n^{-1/4}$ (not adaptive to $\ell$). 
+However, an adaptive confidence region can be constructed if further
+restrictions are placed on the set of possible models, see @nickl2013
+for such a result for Lasso..
+</div> 
 
 ---
 
@@ -1135,7 +1163,6 @@ $$
 ### Simulated data
 
 ```{r, tree, cache=TRUE}
-library(rpart)
 n <- 1000
 x <- runif(n)
 y <- runif(n)
@@ -1162,6 +1189,7 @@ fig
 ### Estimated tree
 
 ```{r, treefit, cache=FALSE}
+library(party)
 n <- 1000
 x <- runif(n)
 y <- runif(n)
@@ -1200,11 +1228,10 @@ plot(tree)
 
 ### Tree algorithm 
 
-- Let $R_0 = support(x)$
 - For each region, solve
 $$ 
-    \min_{j,s} \left[ \min_{c_1} \sum_{i: x_{i,j} \leq s, x_i \in R\}
-        (y_i - c_1)^2 + \min_{c_2} \sum_{i: x_{i,j} > s, x_i \in R\}
+    \min_{j,s} \left[ \min_{c_1} \sum_{i: x_{i,j} \leq s, x_i \in R}
+        (y_i - c_1)^2 + \min_{c_2} \sum_{i: x_{i,j} > s, x_i \in R}
         (y_i - c_2)^2 \right]
 $$
 - Repeat with $R = \{x:x_{i,j} \leq s^*\} \cap R$ and $R =
@@ -1242,29 +1269,32 @@ tree.
     - Bootstrap or subsampling 
     - Randomize branches: 
     $$ 
-    \min_{j \in S,s} \left[ \min_{c_1} \sum_{i: x_{i,j} \leq s, x_i \in R\}
-        (y_i - c_1)^2 + \min_{c_2} \sum_{i: x_{i,j} > s, x_i \in R\}
+    \min_{j \in S,s} \left[ \min_{c_1} \sum_{i: x_{i,j} \leq s, x_i \in R}
+        (y_i - c_1)^2 + \min_{c_2} \sum_{i: x_{i,j} > s, x_i \in R}
         (y_i - c_2)^2 \right]
     $$
-    where $S$ is random subset of $\{1, ..., p}$
-- Purpose is variance reduction
+    where $S$ is random subset of $\{1, ..., p\}$
+- Variance reduction
 
 ---
 
 ### Rate of convergence: regression tree
 
 - $x \in [0,1]^p$, $\Er[y|x]$ Lipschitz in $x$
-- Crude calculation for single tree, let denote $R_i$ node that contains $x_i$
-  $$ 
+- Crude calculation for single tree, let denote $R_i$ node that
+  contains $x_i$
+ $$ 
   \begin{align*}
-  \Er(\hat{t}(x_i) - \Er[y|x_i])^2 = & \overbrace{\\Er(\hat{t}(x_i) -
-  \Er[y|x\in R_i])^2}^{\text{variance}} + 
-  \overbrace{(\Er[y|x \in R_i] - \Er[y|x])^2}^{\text{bias}^2} \\
-  = & O_p(1/\sqrt{m}) + O(L^2 \left(\frac{m}{n}\right)^{2/p}) 
+  \Er(\hat{t}(x_i) - \Er[y|x_i])^2 = & \overbrace{\Er(\hat{t}(x_i) -
+  \Er[y|x\in R_i])^2}^{variance} + 
+  \overbrace{(\Er[y|x \in R_i] - \Er[y|x])^2}^{bias^2} \\
+  = & O_p(1/\sqrt{m}) +  O\left(L^2
+  \left(\frac{m}{n}\right)^{2/p}\right) 
+  \end{align*}
   $$
   optimal $m = O(n^{2/(2+p)})$ gives 
   $$
-  \Er[(\hat{t}(x_i) - \Er[y|x_i])^2] = O_p(n^{-2}{2+p})
+  \Er[(\hat{t}(x_i) - \Er[y|x_i])^2] = O_p(n^{\frac{-2}{2+p}})
   $$
 
 <div class="notes"> 
@@ -1273,7 +1303,9 @@ as fixed. The the variance term is simply from estimating a
 conditional mean. This analysis could be made more rigorous by
 assuming the tree was estimated by sample splitting --- use half the
 data to construct the tree and the remaining half to estimate the mean
-of $y$ in each node. 
+of $y$ in each node. Athey and Wager, and others, refer to such
+trees as "honest." I suppose that this is because sample splitting
+facilitates honest inference afterward. 
 
 The order of the bias term comes from considering the width of the
 pieces of a $p$ dimensional cube split evenly into $n/m$ pieces.
@@ -1285,7 +1317,7 @@ above was admittedly crude, and may not be exact.
 However, @stone1982 showed that if $\Er[y|x]$ is $\ell$ times
 differentiable, the fastest possible rate of convergence for any
 estimator is $n^{\frac{-\ell}{2\ell + p}}$. To have any hope of a fast
-enough rate, we to assume the function we're estimating is very smooth
+enough rate, we need to assume the function we're estimating is very smooth
 (high $\ell$), or place some other restriction on the class of
 functions we allow (like sparsity for the Lasso). Lipschitz continuity
 is slightly weaker than once differentiable on a compact set, so it
@@ -1298,20 +1330,20 @@ should come as no surprise that the rate of convergence would be slow.
 
 
 - Result from @biau2012
-- Assume $\Er[y|x]=\Er[y|x^s]$, $x^s$ subset of $s$
+- Assume $\Er[y|x]=\Er[y|x_{(s)}]$, $x_{(s)}$ subset of $s$
   variables, then
   $$
   \Er[(\hat{r}(x_i) - \Er[y|x_i])^2] =
   O_p\left(\frac{1}{m\log(n/m)^{s/2p}}\right) +
-  O_p\left(\frac{m}{n}^{\frac{0.75}{s\log 2}} \right)
+  O_p\left(\left(\frac{m}{n}\right)^{\frac{0.75}{s\log 2}} \right)
   $$
   or with optimal $m$
   $$
-  \Er[(\hat{t}(x_i) - \Er[y|x_i])^2] = O_p(n^{-0.75}{s\log 2+0.75})
+  \Er[(\hat{t}(x_i) - \Er[y|x_i])^2] = O_p(n^{\frac{-0.75}{s\log 2+0.75}})
   $$
   
-<div class="notes>
-To get this result, @biau2012 assumes the forest is estimated with
+<div class="notes">
+This result from @biau2012 assumes the forest is estimated with
 sample splitting. This avoids the difficult to analyze correlation
 between the nodes and $y$. 
 
@@ -1321,22 +1353,135 @@ higher upper bound for the variance of $\frac{\log(p)\log(n)}{m}$.
 @wager2015 also allow $p$ to increase with $n$, whereas the previous
 analysis treated $p$ as fixed.
 
-It appears that there are convergence rate results for random forests
-that are fast enough for our purpose. Does this mean that random
+These convergence rate results for random forests are not fast enough
+for our purpose. Does this mean that random 
 forests should not be used in semiparametric estimation? Not
-necessarily. We're asking too much of random
-forests. There is no estimator for an arbitrary Lipschitz function
-that can have fast enough a rate of convergence. 
-@chernozhukov2018 advise that random forests could be a good
-choice for semiparametric estimation when the function of interest is
-"well-approximated by a random forest." Unfortunately, there does not
-appear to be a clean mathematical way to describe the class of
-functions well-approximated by a forest. 
+necessarily. We're asking too much of random forests. There is no
+estimator for an arbitrary Lipschitz function that can have fast
+enough a rate of convergence.  A restriction on the set of
+possible functions is needed to reduce the approximation bias. With
+Lasso, the assumption of (approximate) sparsity played that role. 
+@chernozhukov2018 advise that random
+forests could be a good choice for semiparametric estimation when the
+function of interest is "well-approximated by a random forest."
+Unfortunately, there does not appear to be a clean mathematical way to
+describe the class of functions well-approximated by a forest.
 </div>
 
 ---
 
-### Generalized random forests
+### Other statistical properties
+
+- Pointwise asymptotic normality : @wager2018 
+
+<div class="notes">
+    
+    
+</div>
+
+<!-- --->
+## Simulation study
+
+- Partially linear model
+- DGP : 
+    - $x_i \in \R^p$ with $x_{ij} \sim U(0,1)$
+    - $d_i = m(x_i) + v_i$
+    - $y_i = d_i\theta + f(x_i) + \epsilon_i$
+    - $m()$, $f()$ either linear or step functions
+- Estimate by OLS, Lasso, and random forest
+    - Lasso & random forest use orthogonal moments 
+    $$
+     \En[(d_i - \hat{m}(x_i))(y_i - \hat{\mu}(x_i) -  \theta (d_i - \hat{m}(x_i)))] = 0
+    $$
+
+<div class="notes">
+The point of this simulation is to see whether the slower convergence
+rate of random forests matters for the semiparametric problems we have
+in mind. Our theory results suggest that estimates of $\theta$ using
+random forests with $p>2$ will be asymptotically biased. Specifically,
+the term 
+$$ 
+d_n = \En[(m(x_i) - \hat{m}(x_i))(\mu(x_i) - \hat{\mu}(x_i))]
+$$
+will be $O_p(n^{\frac{-2}{2+p}})$, so $\sqrt{n} d_n =
+O_p(n^{\frac{p-2}{2(2+p)}})$. However, this calculation is only an
+upper bound on $d_n$. For a given DGP, $d_n$ might be smaller. 
+
+In this simulation exercise, when $m()$ and $f()$ are linear, they are
+not easy to approximate by a regression tree, so I expect the random
+forest estimator to behave relatively poorly. OLS and Lasso on the
+other hand will do very well, and are included mainly as
+benchmarks. When $m()$ and $f()$ are step functions (specifically,
+$f(x) = m(x) = \sum_{j=1}^p 1(x_{j}>1/2)$), I thought they would be
+well approximated by a regression tree (and random forest). For OLS
+and Lasso, $x$ is still only included linearly in the estimation, so
+those estimators will do poorly in the step function DGP. Throughout
+the simulation $p$ is much less than $n$, so Lasso and OLS will
+generally give very similar results.
+</div> 
+
+--- 
+
+```{r, code=readLines("partialLinear.R"), eval=FALSE}
+```
+
+```{r, plsim, cache=TRUE}
+library(ggplot2)
+library(reshape2)
+library(latex2exp)
+TeX <- latex2exp::TeX
+load("partialLinearSim.Rdata") # see partialLinearSim.R for simulation
+                               # code
+df <- melt(sim.df, measure.vars=c("OLS","Random.Forest","Lasso"))
+ggplot(subset(df,p==2), aes(x=value, colour=variable)) +
+  facet_grid(n ~ design) + geom_density() + theme_minimal() +
+  xlab(TeX('$\\sqrt{n}(\\hat{\\theta}-\\theta_0)$')) +
+  ggtitle("p=2")
+
+```
+
+---
+
+```{r, plsim3, cache=TRUE}
+ggplot(subset(df,p==4), aes(x=value, colour=variable)) +
+  facet_grid(n ~ design) + geom_density() + theme_minimal() +
+  xlab(unname(TeX("$\\sqrt{n}(\\hat{\\theta} - \\theta_0)$"))) +
+  ggtitle("p=4")
+
+```
+
+---
+
+```{r, plsim4, cache=TRUE}
+ggplot(subset(df,p==6), aes(x=value, colour=variable)) +
+  facet_grid(n ~ design) + geom_density() + theme_minimal() +
+  xlab(unname(TeX("$\\sqrt{n}(\\hat{\\theta} - \\theta_0)$"))) +
+  ggtitle("p=6")
+
+```
+
+---
+
+```{r, plsim8, cache=TRUE}
+ggplot(subset(df,p==8), aes(x=value, colour=variable)) +
+  facet_grid(n ~ design) + geom_density() + theme_minimal() +
+  xlab(unname(TeX("$\\sqrt{n}(\\hat{\\theta} - \\theta_0)$"))) +
+  ggtitle("p=8")
+
+```
+
+<div class="notes">
+Random forests do not seem to work very well in this context. Even
+when the functions being estimated are step functions, random forests
+do not produce a good estimate of $\theta$. One caveat here is that I
+was not very careful about the tuning parameters for the random
+forests. It's possible that there exists a careful choice of tuning
+parameters that results in a better estimator.
+</div>
+
+---
+
+<!-- ### Generalized random forests -->
 
 <!-- --------------------------------------------------------------->
 

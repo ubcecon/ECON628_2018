@@ -15,10 +15,10 @@
   \begin{enumerate}
   \item Let
     \begin{align*}
-      \theta^a = & \Er\left[\frac{y_i d_i}{p(x_i)} + \frac{y_i
+      \theta^a = & \Er\left[\frac{y_i d_i}{p(x_i)} - \frac{y_i
                (1-d_i)}{1-p(x_i)} \right] \\
       \theta^b = & \Er\left[\mu(1,x_i) - \mu(0,x_i)\right] \\
-      \theta^c = & \Er\left[d_i \frac{y_i -\mu(1,x_i)}{p(x_i)} +
+      \theta^c = & \Er\left[d_i \frac{y_i -\mu(1,x_i)}{p(x_i)} -
                    (1-d_i)\frac{y_i - \mu(0,x_i)}{1-p(x_i)} +
                    \mu(1,x_i) - \mu(0,x_i)\right]
     \end{align*}
@@ -32,7 +32,7 @@
                                    (1-d_i)\frac{y_i - \mu(0,x_i)}{1-p(x_i)} +
                                    \mu(1,x_i) - \mu(0,x_i)\right]
     \end{align*}                                   
-    Calculate the Fr\'{e}chet (directional) derivatives of
+    Calculate the G\^{a}teaux (directional) derivatives of
     $\Er[\psi^a(w_i;\theta,p,\mu)]$ with respect to $p$ and $\mu$ at
     $p_0, \mu_0$. Do the same for $\psi^b$ and $\psi^c$.    
   \end{enumerate}
@@ -48,9 +48,9 @@
   with $\Er[\epsilon|z] = 0$ and $\Er[u|z] = 0$. Let $\hat{f}()$ be an
   estimate of $f$ that satisfies the following high level assumptions:
   \begin{align}
-    \En[d_i \hat{f}(x_i)] - \En[d_i \hat{f}(x_i)] = & O_p(n^{-1/2} +
+    \En[d_i \hat{f}(x_i)] - \Er[d_i f(x_i)] = & O_p(n^{-1/2} +
                                                       r_n) \label{r1} \\
-    \En[(\hat{f}(x_i) - f(x_i)) \epsilon_i] = & O_p(n^{-1/2} r_n) \label{r1}
+    \En[(\hat{f}(x_i) - f(x_i)) \epsilon_i] = & O_p(n^{-1/2} r_n) \label{r2}
   \end{align}
   for some $r_n \to 0$. Show that the estimate
   \begin{align*}
@@ -129,6 +129,24 @@ library(foreign)  # you will have to install this package with
                   # 'install.packages("foreign")' first
 data <- read.dta("favoriteData.dta")
 \end{lstlisting}
+    If you don't have a favorite dataset, R and many R packages
+    include some datasets. For example, some included in R are listed
+    \href{https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/00Index.html}{here}. Most
+    of those are rather small and not the best choice for this
+    assigment. The ``hdm'' package, which we will use later, contains
+    some larger datasets from various economics papers,
+    \cite{hdm}. To  use them:
+\begin{lstlisting}
+install.packages("hdm") # install the package
+library(hdm)
+data(AJR) # load Acemoglu, Johnson, & Robinson data (or BLP, 
+          #         EminentDomain, GrowthData, or pension) 
+summary(AJR)
+\end{lstlisting}
+    Journal websites are another potential source of data. 
+    \href{https://web.stanford.edu/~hastie/CASI/data.html}{Textbooks,
+      like \cite{efron2016},} often include datasets. 
+    
     You should check that your data has been read correctly and contains
     what you expect by looking at some summary statistics
 \begin{lstlisting}
