@@ -1,0 +1,52 @@
+\input{../assignmentHeader.tex''}
+
+\title{Economics 628 : Assignment 2}
+\author{Paul Schrimpf}
+\date{Due: September 19th, 2018}
+
+\begin{document}
+\maketitle
+
+
+\begin{problem}$\;$
+  In this problem, you'll reproduce and extend the analysis of
+  \cite{qsw2018}. Begin by reading the paper.
+  \begin{enumerate}
+  \item What is the exogeneity assumption in equation (1) of section
+    IV.B? How does the use of controls affect the plausibility of this
+    assumption?
+  \item Reproduce the results in Table 2. The authors' data and Stata
+    code is on the AER website.
+    \href{https://github.com/ubcecon/ECON628_2018/tree/master/paul/assignments/02/qsw-dataPrep.R}
+    {qsw-dataPrep.R} 
+    downloads and prepares the data for analysis.\footnote{This is
+      mostly a direct translation of the authors' Stata code into
+      R. As such, it's not written in an idiomatic R style.}
+    \footnote{If you
+      run on this on a non-Linux system you will have to change lines
+      13-15 or just manually rename the ``data'' folder to ``qsw2018.''}
+    \href{https://github.com/ubcecon/ECON628_2018/tree/master/paul/assignments/02/qsw-table2.R}
+    {qsw-table2.R} estimates the model in column 3 of table 2.
+  \item Next, we will use Lasso to allow for a more flexible
+    specification of controls in equation (1). However, with panel
+    data and a model with fixed effects, the Lasso must be modified
+    slightly. Explain how the cluster-Lasso estimator of
+    @cite{bchk2016} differs from the Lasso estimator for independent
+    observations referenced in the notes. Alternatively, write code
+    that calculates the cluster Lasso estimate. 
+  \item
+    \href{https://github.com/ubcecon/ECON628_2018/tree/master/paul/assignments/02/rlassoEffectsPanel.R}
+    {rlassoEffectsPanel.R}
+    implements the cluster-Lasso estimator. Use it to estimate equation (1) while including many
+    more controls. Discuss the results. Did using Lasso add anything
+    to this example?
+  \end{enumerate}
+\end{problem}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\bibliographystyle{jpe}
+\bibliography{/home/paul/ECON628_2018/paul/01-machineLearningAndCausalInference/ml.bib}
+
+\end{document}
