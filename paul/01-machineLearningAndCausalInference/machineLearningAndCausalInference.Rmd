@@ -1376,12 +1376,14 @@ describe the class of functions well-approximated by a forest.
 - Pointwise asymptotic normality : @wager2018 
 
 <div class="notes">
-    
-    
+
 </div>
 
 <!-- --->
-## Simulation study
+
+---
+
+### Simulation study
 
 - Partially linear model
 - DGP : 
@@ -1497,11 +1499,93 @@ forest.
 
 <!-- --------------------------------------------------------------->
 
-## Neural Nets
+## Neural Networks
 
+- Target function $f: \R^p \to \R$ 
+    - e.g. $f(x) = \Er[y|x]$
+- Approximate with single hidden layer neural network :
+$$
+\hat{f}(x) = \sum_{j=1}^r \beta_j (a_j'a_j \vee 1)^{-1}
+\psi(a_j'x + b_j)
+$$
+    - Activation function $\psi$ 
+       - Sigmoid $\psi(t) = 1/(1+e^{-t})$
+       - Tanh $\psi(t) = \frac{e^t -e^{-t}}{e^t + e^{-t}}$
+       - Rectified linear $\psi(t) = t 1(t\geq 0)$
+    - Weights $a_j$
+    - Bias $b_j$
+- Able to approximate any $f$, @hornik1989
+
+---
+
+### Deep Neural Networks
+
+- Many hidden layers
+    - $x^{(0)} = x$ 
+    - $x^{(\ell)}_j = \psi(a_j^{(\ell)} x^{(\ell-1)} + b_j^{(\ell)})
+
+---
+
+### Rate of convergence
+
+- @chen1999
+- $f(x) = \Er[y|x]$ with Fourier representation 
+$$ f(x) = \int e^{i a'x} d\sigma_f(a) $$
+  where $\int (\sqrt{a'a} \vee 1) d|\sigma_f|(a) < \infty$ 
+- Network sieve :
+$$ \mathcal{G}_n) = \{
+g: g(x) = \sum_{j=1}^{r_n} \beta_j (a_j'a_j \vee 1)^{-1}
+\psi(a_j'x + b_j)\;,\; \norm{\beta}_1 \leq B_n \}
+$$
+- Estimate 
+$$
+\hat{f} = \argmin_{g \in \mathcal{G}_n} \En [(y_i - g(x_i))^2] 
+$$
+
+
+<div class="notes>
+The setup in @chen1999 is more general. They consider estimating both
+$f$ and its first $m$ derivatives. Here, we focus on the case of just
+estimating $f$. @chen1999 also consider estimation of functions other
+than conditional expectations. 
+
+The restriction on $f$ in the second bullet is used to control
+approximation error. The second bullet says that $f$ is the inverse
+Fourier transform of measure $\sigma_f$. The bite of the restriction
+on $f$ comes from the requirement that $\sigma_f$ be absolutely
+integral, $\int (\sqrt{a'a} \vee 1) d|\sigma_f|(a) < \infty$. It would
+be a good exercise to check whether this restriction is satisfied by
+some familiar types of functions. @barron1993 first showed that neural
+networks approximate this class of functions well, and compares his
+result to other function approximation results. 
+</div>
+
+---
+
+### Rate of convergence
+
+- For fixed $p$, if $r_n^{2(1+1/(1+p))} \log(r_n) = O(n)$, $B_n \geq $ some constant
+  $$
+\Er[(\hat{f}(x) - f(x))^2] = O\left((n/\log(n))^{\frac{-1 + 2/(p+1)}
+{2(1+1/(p+1))}}\right) 
+  $$
+
+<div class="notes>
+It is easy to see that regardless of $p$, $\sqrt{n}\Er[(\hat{f}(x) -
+f(x))^2] \to 0$. Therefore, neural networks would be suitable for
+estimating the nuisance functions in our examples above. 
+</div>
+
+---
+    
 <!-- --------------------------------------------------------------->
 
 # Using machine learning to estimate causal effects
+
+## Double debiased machine learning
+
+- @chernozhukov2018, @chernozhukov2017
+ 
 
 <!-- --- -->
 
@@ -1527,10 +1611,6 @@ forest.
 ## IV and LATE with random forests
 
 - @athey2016, @wager2018, etc
-
-## Double debiased machine learning
-
-- @chernozhukov2018, @chernozhukov2017
 
 <!-- --- -->
 
