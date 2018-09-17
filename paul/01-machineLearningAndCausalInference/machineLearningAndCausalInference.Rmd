@@ -69,6 +69,7 @@ $$
 $$
 
 ```{r setup, cache=FALSE}
+library(knitr)
 if (slides) {
   opts_chunk$set(echo=FALSE)
 }
@@ -1476,17 +1477,7 @@ when the functions being estimated are step functions, random forests
 do not produce a good estimate of $\theta$. One caveat here is that I
 was not very careful about the tuning parameters for the random
 forests. It's possible that there exists a careful choice of tuning
-parameters that results in a better estimator. Another important
-caveat is that I did use sample splitting. @chernozhukov2018 use
-sample splitting to control the terms 
-$$
-\begin{align*}
-b = & \En[(m(x_i)-\hat{m}(x_i))\epsilon_i] \\
-c = & \En[v_i(\mu(x_i) - \hat{\mu}(x_i))] 
-\end{align*}
-$$
-These might also be the source of the problem with the random forest
-estimates. 
+parameters that results in a better estimator. 
 
 <div class="alert alert-danger">
 ***Research idea:*** create a generalization of random forests that is
