@@ -16,7 +16,7 @@ summary(felm(pc1s ~ reform_cg2003 + reform_cg2003:commercial
 # construct x matrix
 m <- felm(pc1s ~ reform_cg2003 + reform_cg2003:commercial +
             poly(log(gdp), log(industrialshare), log(population),
-                 log(realfdi), degree=3) +
+                 log(realfdi), degree=5) +
             year:(log(gdp) + log(industrialshare) + log(population) +
                   log(realfdi)) +
             as.factor(year)

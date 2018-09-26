@@ -1,0 +1,493 @@
+---
+title       : "Machine Learning and causal inference"
+subtitle    : "Example: Program Keluarga Harapan"
+author      : Paul Schrimpf
+job         :
+date        : "`r format(Sys.time(), '%d %B, %Y')`"
+bibliography: "ml.bib"
+output      :
+    html_document :
+        toc : true
+        toc_depth : 2
+        toc_float : true
+        number_sections : true
+        df_print : paged
+        theme : journal
+        css : 628notes.css
+        code_folding: hide
+        lib_dir : deps
+        self_cononontained : false
+        fig_width: 8
+        fig_height: 6
+    ioslides_presentation :
+        self_contained: false
+        code_folding: hide
+        lib_dir : deps
+        theme : journal
+        fig_width: 8
+        fig_height: 6
+        df_print : paged
+        
+## To create html files from this, in R enter'source("../renderAll.R"); renderAll("filename.Rmd")'
+---
+
+## {-}
+<a rel="license"
+href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative
+Commons License" style="border-width:0"
+src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png"
+/></a><br />This work is licensed under a <a rel="license"
+href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+Commons Attribution-ShareAlike 4.0 International License</a>.
+
+$$
+\def\indep{\perp\!\!\!\perp}
+\def\Er{\mathrm{E}}
+\def\R{\mathbb{R}}
+\def\En{{\mathbb{E}_n}}
+\def\Pr{\mathrm{P}}
+\newcommand{\norm}[1]{\left\Vert {#1} \right\Vert}
+\newcommand{\abs}[1]{\left\vert {#1} \right\vert}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+$$
+
+```{r setup, cache=FALSE, echo=FALSE}
+library(knitr)
+if (slides) {
+  opts_chunk$set(echo=FALSE)
+  opts_chunk$set(warning=FALSE)
+  opts_chunk$set(message=FALSE)
+}
+```
+
+<!-- --- -->
+
+# Introduction
+
+## Background
+
+-  Program Keluarga Harapan : pilot conditional cash transfer program
+   in Indonesia
+   - @alatas2011, @triyana2016
+
+- Conditional cash transfer: receive cash if
+
+    - Expectant women: 4 prenatal visits, iron supplement,
+      delivery by doctor or midwife, 2 postnatal visits
+
+    - Children under 5: weighed monthly, vaccinated, vitamin A
+
+- Quarterly transfer of 600,000-2,200,000 rupiah (\$60 - \$220)
+    depending on household composition (15-20\% of quaterly
+    consumption)
+
+- Randomized at subdistrict level : want to capture supply side
+    effects that would occur if policy implemented everywhere 
+    
+
+## Baseline characteristics
+
+```{r, loaddata, cache=TRUE}
+if (!file.exists("Data_AEJPol-2014-0048/data_final/price_women.dta"))
+{
+  stop("Please download the data from https://www.aeaweb.org/articles?id=10.1257/pol.20140048 and unzip it in the current directory")
+}
+
+if (!require(foreign)) install.packages("foreign")
+library(foreign)
+all.data <- read.dta("Data_AEJPol-2014-0048/data_final/price_women.dta")
+
+# Variables we will use
+vars <- c("rid_panel","prov","Location_ID","dist",
+          "wave",
+          "edu","agecat","log_xp_percap",#"hh_land","hh_home",
+          "rhr031", "rhr032", "rhr034", "rhr036",# "hh_xp",
+          "death_ch","bw","bw_low",
+           "birthfac", "good_assisted_delivery", "dummy_A", "dummy_B",
+          "dummy_D",
+          "delivery_fees", "delivery_fees_prof", "delivery_fees_doc",
+          "delivery_fees_midw", "delivery_fees_trad",
+          "control_pkh", "pkh_kec_ever", "pkh_ever", "bw_kec",
+          "bw_low_kec", "death_ch_kec",
+          "dummy_A_base", "dummy_B_base", "dummy_D_base",
+          "bid_pkh1", "bid_pkh1_base" ,
+          "delivery_fees_top", "delivery_fees_prof_top", "delivery_fees_doc_top",
+          "delivery_fees_midw_top", "delivery_fees_trad_top",
+          "delivery_fees_top_base", "delivery_fees_prof_top_base", "delivery_fees_doc_top_base",
+          "delivery_fees_midw_top_base",
+          "delivery_fees_trad_top_base", names(all.data)[grep("^hh_",names(all.data))],
+           "tv",                              "parabola"       ,                 "fridge"          ,
+          "motorbike",                       "car"            ,                 "pig"               ,
+          "goat"  ,                          "cow"           ,                  "horse" 
+          )
+pw <- all.data[,vars]
+
+## Rename some variables
+names(pw)[names(pw)=="dummy_A"] <- "doctor_birth"
+names(pw)[names(pw)=="dummy_A_base"] <- "doctor_birth_base"
+names(pw)[names(pw)=="dummy_B"] <- "midwife_birth"
+names(pw)[names(pw)=="dummy_B_base"] <- "midwife_birth_base"
+names(pw)[names(pw)=="dummy_D"] <- "traditional_birth"
+names(pw)[names(pw)=="dummy_D_base"] <- "traditional_birth_base"
+
+# Set household variables to their pretreatment (wave=1) values
+for (v in c("edu","agecat","log_xp_percap", 
+            "rhr031", "rhr032", "rhr034", "rhr036", names(pw)[grep("^hh_",names(pw))],
+            "tv","parabola","fridge","motorbike","car","pig","goat","cow","horse")) {
+  temp <- ifelse(pw$wave==1,pw[,v],NA)
+  temp0 <- ave(temp, pw$rid_panel, FUN=function(x) max(x,na.rm=TRUE))
+  pw[,v] <- ifelse(is.finite(temp0), temp0, pw[,v])
+}
+pw$delivery_fees_trad_top[is.na(pw$delivery_fees_trad_top)
+                          &
+                          !is.na(pw$delivery_fees_midw_top)] <- 0
+```
+
+```{r, sumstats, cache=TRUE, dependson=c("loaddata")}
+adf <- aggregate(subset(pw,wave==1), by=list(subset(pw,wave==1)$control_pkh),
+                 FUN=function(x) mean(x,na.rm=TRUE))
+adf
+```
+
+## Main results
+
+### Delivery attendant usage
+
+```{r, usage, cache=TRUE, dependson=c("loaddata"), results="asis"}
+library(lfe)
+lhs <- "pkh_kec_ever + doctor_birth_base + as.factor(edu) + as.factor(agecat) + log_xp_percap + hh_land + hh_home | dist | 0 | Location_ID"
+itt <- list(felm(as.formula(paste("doctor_birth ~",lhs)),data=pw),
+            felm(as.formula(paste("midwife_birth ~",lhs)),data=pw),
+            felm(as.formula(paste("traditional_birth ~",lhs)),data=pw))
+lhs <- "doctor_birth_base + as.factor(edu) + as.factor(agecat) + log_xp_percap + hh_land + hh_home | dist | (pkh_ever ~ pkh_kec_ever) | Location_ID"
+iv <-   list(felm(as.formula(paste("doctor_birth ~",lhs)),data=pw),
+            felm(as.formula(paste("midwife_birth ~",lhs)),data=pw),
+            felm(as.formula(paste("traditional_birth ~",lhs)),data=pw))
+
+library(stargazer)
+stargazer(itt, type="html",
+  title="ITT estimates", dep.var.labels =
+  c("Doctor","Midwife","Traditional"), keep="pkh",
+  omit.table.layout="n",omit.stat = c("rsq","adj.rsq","ser"))
+```
+
+--- 
+
+### Delivery attendant usage{-}
+
+```{r, usage2, cache=TRUE,dependson=c("usage"),results="asis"}
+stargazer(iv, type="html",
+  title="IV effect of program participation", dep.var.labels =
+  c("Doctor","Midwife","Traditional"), keep="pkh",
+  omit.table.layout="n",omit.stat = c("rsq","adj.rsq","ser"))
+
+
+```
+
+--- 
+
+### Health outcomes
+
+```{r, outcomes, cache=TRUE, dependson=c("loaddata"), results="asis"}
+library(lfe)
+lhs <- "pkh_kec_ever + doctor_birth_base + as.factor(edu) + as.factor(agecat) + log_xp_percap + hh_land + hh_home | dist | 0 | Location_ID"
+itt <- list(felm(as.formula(paste("death_ch ~",lhs)),data=pw),
+            felm(as.formula(paste("bw ~",lhs)),data=pw),
+            felm(as.formula(paste("bw_low ~",lhs)),data=pw))
+
+lhs <- "doctor_birth_base + as.factor(edu) + as.factor(agecat) + log_xp_percap + hh_land + hh_home | dist | (pkh_ever ~ pkh_kec_ever) | Location_ID"
+iv <- list(felm(as.formula(paste("death_ch ~",lhs)),data=pw),
+            felm(as.formula(paste("bw ~",lhs)),data=pw),
+            felm(as.formula(paste("bw_low ~",lhs)),data=pw))
+
+library(stargazer)
+stargazer(itt, type="html",
+  title="ITT estimates", dep.var.labels =
+  c("Infant mortality","Birthweight","Low birthweight"), keep="pkh",
+  omit.table.layout="n",omit.stat = c("rsq","adj.rsq","ser"))
+```
+
+--- 
+
+### Health outcomes{-}
+
+```{r, outcomes2, cache=TRUE, dependson=c("outcomes"), results="asis"}
+stargazer(iv, type="html",
+  title="IV effect of program participation", dep.var.labels =
+  c("Infant mortality","Birthweight","Lowbirthweigt"), keep="pkh",
+  omit.table.layout="n",omit.stat = c("rsq","adj.rsq","ser"))
+```
+
+# Exploring heterogeneity
+
+## Machine learning as proxy
+
+- Generic machine learning approach of @cddf2018
+
+- Estimate machine learning proxies for $\Er[y|x,d]$
+
+- Use proxies to :
+
+    -  Estimate best linear projection on true $\Er[y(1) - y(0)|x]$
+
+    -  Estimate $\Er[y(1) - y(0) | groups]$ 
+        
+--- 
+
+### Heterogeneity in CATE for Birthweight
+
+
+```{r, genericml, cache=TRUE}
+## Function for Generic machine learning of Chernozhukov, Demirer, Duflo, & Fernandez-Val (2018)
+genericML <- function(x,y,treat, fit.function, predict.function,
+                      n.split=10, n.group=5, clusterid=NULL) {
+  if (!is.null(clusterid)) require(sandwich) 
+  blp <- matrix(NA, nrow=n.split, ncol=2)
+  blp.se <- blp
+  gate <- matrix(NA, nrow=n.split, ncol=n.group)
+  gate.se <- gate 
+  baseline <- matrix(NA, nrow=nrow(x), ncol=n.split)
+  cate <- matrix(NA, nrow=nrow(x), ncol=n.split)
+  Lambda <- matrix(NA, nrow=n.split, ncol=2)
+  for(i in 1:n.split) {
+    main <- runif(nrow(x))>0.5
+    fit1 <- fit.function(x[!main & treat==1,], y[!main & treat==1])
+    fit0 <- fit.function(x[!main & treat==0,], y[!main & treat==0])
+    B <- as.vector(predict.function(fit0,x))
+    S <- as.vector(predict.function(fit1,x)) - B
+    baseline[,i] <- B
+    cate[,i] <- S
+    ES <- mean(S)
+    ## BLP
+    # assume P(treat|x) = P(treat) = mean(treat)
+    p <- mean(treat)
+    df <- data.frame(y, B, treat, S, main)
+    reg <- lm(y ~ B + I(treat-p) + I((treat-p)*(S-ES)), data=subset(df, main))
+    blp[i,] <- reg$coef[3:4]
+    if (is.null(clusterid)) blp.se[i,] <- sqrt(diag(vcovHC(reg))[3:4])
+    else blp.se[i,] <- sqrt(diag(vcovCL(reg, clusterid[main]))[3:4])
+    Lambda[i,1] <- reg$coefficient[4]^2*var(S)
+    ## GATES
+    cut <- quantile(S, probs=seq(0,1,length.out=(n.group+1)))
+    cut[n.group+1] <- cut[n.group+1] + 1 
+    for(k in 1:n.group) {
+      df[,sprintf("G.%d",k)] <- (cut[k]<=S & S<cut[k+1])
+    }
+    greg <- lm(as.formula(paste(c("y ~ B ", sprintf("I((treat-p)*G.%d)",1:n.group)), collapse=" + ")),
+                data=subset(df,main))    
+    gc <- grep("G", names(greg$coefficients))
+    gate[i,] <- greg$coefficients[gc]
+    if (is.null(clusterid)) gate.se[i,] <- sqrt(diag(vcovHC(greg))[gc])
+    else gate.se[i,] <- sqrt(diag(vcovCL(greg, clusterid[main]))[gc])
+    Lambda[i,2] <- sum(gate[i,]^2)/n.group
+  }
+  out <- list( gate=gate, gate.se=gate.se, blp=blp, blp.se=blp.se, Lambda=Lambda, baseline=baseline, cate=cate)
+}
+
+genericML.summary <- function(gml)
+{
+  blp <- apply(gml$blp, 2, function(x) median(x, na.rm=TRUE))
+  blp.se <- apply(gml$blp.se, 2, function(x) median(x, na.rm=TRUE))
+  gate <- apply(gml$gate, 2, function(x) median(x, na.rm=TRUE))
+  gate.se <- apply(gml$gate.se, 2, function(x) median(x, na.rm=TRUE))
+  Lambda <- apply(gml$Lambda, 2, function(x) median(x, na.rm=TRUE))
+  return(list(blp=blp, blp.se=blp.se, gate=gate, gate.se=gate.se, Lambda=Lambda))
+}
+
+```
+
+```{r, prepx, cache=TRUE, dependson=c("loaddata")}
+library(glmnet)
+
+# create x matrix
+fmla.l <- bw ~ pkh_kec_ever +
+  as.factor(edu)*as.factor(agecat) + log_xp_percap + hh_land + hh_home + as.factor(dist) +
+  hh_phone + hh_rf_tile + hh_rf_shingle + hh_rf_fiber +
+  hh_wall_plaster + hh_wall_brick + hh_wall_wood + hh_wall_fiber +
+  hh_fl_tile + hh_fl_plaster + hh_fl_wood + hh_fl_dirt +
+  hh_water_pam + hh_water_mechwell + hh_water_well + hh_water_spring + hh_water_river + 
+  hh_waterhome + 
+  hh_toilet_own + hh_toilet_pub + hh_toilet_none +
+  hh_waste_tank + hh_waste_hole + hh_waste_river + hh_waste_field +
+  hh_kitchen +
+  hh_cook_wood + hh_cook_kerosene + hh_cook_gas +
+  tv + fridge + motorbike + car + goat + cow + horse
+m <- lm(fmla.l, data=pw, x=TRUE, y=TRUE)
+treat <- m$x[,2]
+Xl <- m$x[,3:ncol(m$x)]
+scale <- sd(m$y)
+center <- mean(m$y)
+yl <- (m$y-center)/scale
+lid <- as.factor(pw[as.numeric(rownames(m$x)),]$Location_ID)
+```
+
+```{r, lasso, cache=TRUE, dependson=c("loaddata","genericml","prepx")}
+gml.lasso <- genericML(Xl,m$y, treat, 
+                   function(x,y) cv.glmnet(x,(y-center)/scale,alpha=1,parallel=FALSE, intercept=TRUE, nfolds=20),
+                   function(model, x) { predict(model, x, s=model$lambda.min, type="response")*scale + center },
+                   n.split=11,n.group=5, clusterid=lid)
+```
+
+```{r, forest, cache=TRUE, dependson=c("loaddata","prepx","genericml")}
+library(grf)
+gml.rf <- genericML(Xl,m$y, treat, 
+                   function(x,y) regression_forest(x, (y-center)/scale, tune.parameters=TRUE),
+                   function(model, x) { predict(model,x)$predictions*scale + center},
+                   n.split=11,n.group=5, clusterid=lid)
+```
+
+```{r, neural, cache=TRUE, dependson=c("loaddata","prepx","genericml")}
+library(RSNNS)
+gml.nn <- genericML(Xl,m$y, treat, 
+                   function(x,y) mlp(x,(y-center)/scale,linOut=TRUE, size=c(10,10), learnFunc="SCG"),
+                   function(model, x) { predict(model,x)*scale + center},
+                   n.split=11,n.group=5, clusterid=lid)
+```
+
+
+```{r, cateplot, cache=TRUE, dependson=c("lasso","forest","neural")}
+library(GGally)
+df <- data.frame(Lasso=apply(gml.lasso$cate,1,median),
+                 Forest=apply(gml.rf$cate,1,median),
+                 Neural=apply(gml.nn$cate,1,median))
+ggpairs(df, lower=list(continuous="smooth"))  + theme_minimal()
+```
+
+---
+
+```{r, blp-bw, cache=TRUE, dependson=c("lasso","forest","neural"), results='asis'}
+library(kableExtra)
+colfn <- function(gml) {
+  s <- genericML.summary(gml)
+  c(s$blp[1], s$blp.se[1], s$blp[2], s$blp.se[2], s$Lambda[1])
+}
+tbl <- cbind(colfn(gml.lasso), colfn(gml.rf), colfn(gml.nn))
+colnames(tbl) <- c("Lasso","Regression forest","Neural network")
+rownames(tbl) <- c("ATE","SE","b1","SE","Lambda")
+
+kable_styling(kable(tbl,
+                    caption="Machine learning proxies as BLP of CATE on Birthweight",
+                    format="html", digits=3),
+              bootstrap_options = c("striped", "hover", "condensed",
+                                    "responsive"), full_width=TRUE)
+```
+
+---
+
+```{r, gate-bw, cache=TRUE, dependson=c("lasso","forest","neural"), results='asis'}
+library(kableExtra)
+colfn <- function(gml) {
+  s <- genericML.summary(gml)
+  c(s$gate[1], s$gate.se[1],
+    s$gate[2], s$gate.se[2],
+    s$gate[3], s$gate.se[3],
+    s$gate[4], s$gate.se[4],
+    s$gate[5], s$gate.se[5], 
+    s$Lambda[2])
+}
+tbl <- cbind(colfn(gml.lasso), colfn(gml.rf), colfn(gml.nn))
+colnames(tbl) <- c("Lasso","Regression forest","Neural network")
+rownames(tbl) <- c(rep(c("GATE","SE"),5),"Lambda")
+
+kable_styling(kable(tbl,
+                    caption="GATE on Birthweight",
+                    format="html", digits=3),
+              bootstrap_options = c("striped", "hover", "condensed",
+                                    "responsive"), full_width=TRUE)
+```
+
+---
+
+### Heterogeneity in CATE on Midwife utilization
+
+```{r, prep-mw, cache=TRUE, dependson=c("loaddata","prepx")}
+# create x matrix
+mwb <- pw[as.numeric(rownames(m$x)),]$midwife_birth
+```
+
+```{r, lasso-mw, cache=TRUE, dependson=c("loaddata","genericml","prepx")}
+mw.lasso <- genericML(Xl,mwb, treat, 
+                   function(x,y) cv.glmnet(x,y,family="binomial",
+                                           alpha=1,parallel=FALSE, intercept=TRUE, nfolds=20),
+                   function(model, x) { predict(model, x, s=model$lambda.min, type="response") },
+                   n.split=11,n.group=5, clusterid=lid)
+```
+
+```{r, forest-mw, cache=TRUE, dependson=c("loaddata","prepx","genericml")}
+library(grf)
+mw.rf <- genericML(Xl,mwb, treat, 
+                   function(x,y) regression_forest(x, y, tune.parameters=TRUE),
+                   function(model, x) { predict(model,x)$predictions },
+                   n.split=11,n.group=5, clusterid=lid)
+```
+
+```{r, neural-mw, cache=TRUE, dependson=c("loaddata","prepx","genericml")}
+library(RSNNS)
+mw.nn <- genericML(Xl,mwb, treat, 
+                   function(x,y) mlp(x, y, linOut=FALSE, size=c(10,10), learnFunc="SCG"),
+                   function(model, x) { predict(model,x) },
+                   n.split=11,n.group=5, clusterid=lid)
+```
+
+
+```{r, cateplot-mw, cache=TRUE, dependson=c("lasso-mw","forest-mw","neural-mw")}
+library(GGally)
+df <- data.frame(Lasso=apply(mw.lasso$cate,1,median),
+                 Forest=apply(mw.rf$cate,1,median),
+                 Neural=apply(mw.nn$cate,1,median))
+ggpairs(df, lower=list(continuous="smooth"))  + theme_minimal()
+```
+
+---
+
+```{r, blp-mw, cache=TRUE, dependson=c("lasso-mw","forest-mw","neural-mw"), results='asis'}
+library(kableExtra)
+colfn <- function(gml) {
+  s <- genericML.summary(gml)
+  c(s$blp[1], s$blp.se[1], s$blp[2], s$blp.se[2], s$Lambda[1])
+}
+tbl <- cbind(colfn(mw.lasso), colfn(mw.rf), colfn(mw.nn))
+colnames(tbl) <- c("Lasso","Regression forest","Neural network")
+rownames(tbl) <- c("ATE","SE","b1","SE","Lambda")
+
+kable_styling(kable(tbl,
+                    caption="Machine learning proxies as BLP of CATE on Midwife Use",
+                    format="html", digits=3),
+              bootstrap_options = c("striped", "hover", "condensed",
+                                    "responsive"), full_width=TRUE)
+```
+
+---
+
+```{r, gate-mw, cache=TRUE, dependson=c("lasso-mw","forest-mw","neural-mw"), results='asis'}
+library(kableExtra)
+colfn <- function(gml) {
+  s <- genericML.summary(gml)
+  c(s$gate[1], s$gate.se[1],
+    s$gate[2], s$gate.se[2],
+    s$gate[3], s$gate.se[3],
+    s$gate[4], s$gate.se[4],
+    s$gate[5], s$gate.se[5], 
+    s$Lambda[2])
+}
+tbl <- cbind(colfn(mw.lasso), colfn(mw.rf), colfn(mw.nn))
+colnames(tbl) <- c("Lasso","Regression forest","Neural network")
+rownames(tbl) <- c(rep(c("GATE","SE"),5),"Lambda")
+
+kable_styling(kable(tbl,
+                    caption="GATE on Midwife Use",
+                    format="html", digits=3),
+              bootstrap_options = c("striped", "hover", "condensed",
+                                    "responsive"), full_width=TRUE)
+```
+
+
+
+
+# Comparing estimation methods
+
+
+# References 
+
+---

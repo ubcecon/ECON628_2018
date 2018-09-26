@@ -1,8 +1,8 @@
 ---
 title       : "Machine Learning and causal inference"
-subtitle    : 
+subtitle    :
 author      : Paul Schrimpf
-job         : 
+job         :
 date        : "`r format(Sys.time(), '%d %B, %Y')`"
 bibliography: "ml.bib"
 output      :
@@ -18,24 +18,6 @@ output      :
         self_cononontained : false
         fig_width: 8
         fig_height: 6
-    revealjs::revealjs_presentation:
-        self_contained: false
-        theme: black
-        transition: fade
-        center : true
-        highlight : zenburn
-        code_folding: hide
-        lib_dir : deps
-        css : slides.css
-        reveal_plugins: ["chalkboard","zoom","notes"]
-        reveal_options:
-            slideNumber: false
-            help : true
-            previewLinks: true
-            chalkboard:
-                theme: whiteboard
-                toggleNotesButton: true
-                toggleChalkboardButton: true
     ioslides_presentation :
         self_contained: false
         code_folding: hide
@@ -60,7 +42,7 @@ $$
 \def\indep{\perp\!\!\!\perp}
 \def\Er{\mathrm{E}}
 \def\R{\mathbb{R}}
-\def\En{\mathbb{E}_n}
+\def\En{{\mathbb{E}_n}}
 \def\Pr{\mathrm{P}}
 \newcommand{\norm}[1]{\left\Vert {#1} \right\Vert}
 \newcommand{\abs}[1]{\left\vert {#1} \right\vert}
@@ -68,7 +50,7 @@ $$
 \DeclareMathOperator*{\argmin}{arg\,min}
 $$
 
-```{r setup, cache=FALSE}
+```{r setup, cache=FALSE, echo=FALSE}
 library(knitr)
 if (slides) {
   opts_chunk$set(echo=FALSE)
@@ -288,7 +270,7 @@ literature on matching. @imbens2015 focuses on practical advice
 for matching and includes a brief mention of incorporating machine
 learning.
 </div>
-    
+
 Both the partially linear model and treatment effects model can be
 extended to situations with endogeneity and instrumental
 variables.
@@ -312,10 +294,10 @@ $$
 
 <div class="notes">
 Most of the remarks about the partially linear model also apply
-here. 
+here.
 
 @hartford2017 estimate a generalization of this model with $y_i =
-f(d_i, x_i) +\epsilon$ using deep neural networks. 
+f(d_i, x_i) +\epsilon$ using deep neural networks.
 
 **Example : compulsory schooling and earnings**
 
@@ -346,7 +328,7 @@ $$
 \begin{align*}
 \theta = & \Er\left[\Er[y_i(1) - y_i(0) | x, d_i(1) > d_i(0)]\right] \\
        = & \Er\left[\frac{\Er[y|z=1,x] - \Er[y|z=0,x]}
-                      {\Er[d|z=1,x]-\Er[d|z=0,x]} \right] 
+                      {\Er[d|z=1,x]-\Er[d|z=0,x]} \right]
 \end{align*}
 $$
 
@@ -399,9 +381,9 @@ $$
     1. $\En[d_i(y_i - \tilde{\theta} d_i - \hat{f}(x_i)) ] = 0$
 
     and
-    
+
     2. $\En[(d_i - \hat{m}(x_i))(y_i - \hat{\mu}(x_i) -  \theta (d_i - \hat{m}(x_i)))] = 0$
-    
+
     where $m(x) = \Er[d|x]$ and $\mu(y) = \Er[y|x]$
 
 <div class="notes">
@@ -476,7 +458,7 @@ $\Er[\epsilon|x] = 0$. This makes it possible, but difficult to show
 that $\sqrt{n}b \to_p = 0$ and $\sqrt{n} c \to_p = 0$, see
 e.g. @belloni2014. However, the conditions on $\hat{m}$ and
 $\hat{\mu}$ needed to show this are slightly restrictive, and
-appropriate conditions might not be known for all estimators. 
+appropriate conditions might not be known for all estimators.
 @chernozhukov2018 describe a sample splitting modification to
 $\hat{\theta}$ that allows $\sqrt{n} b$ and $\sqrt{n} c$ to vanish
 under weaker conditions (essentially the same rate condition as needed
@@ -588,7 +570,7 @@ use of orthogonalization.
 @friedman2008 and @james2013 are commonly recommended textbooks on
 machine learning. @james2013 is less technical of the two, but neither
 book is especially difficult. @efron2016 covers similar material and
-is slightly more advance. 
+is slightly more advance.
 </div>
 </div>
 
@@ -622,7 +604,7 @@ library(GGally)
 ggpairs(ahs[,c("LOGVALUE","ROOMS", "LOT","UNITSF","BUILT")],
         lower=list(continuous="points", combo="facethist",
                    discrete="facetbar"),
-        diag=list(continuous="barDiag",discrete="barDiag")) + 
+        diag=list(continuous="barDiag",discrete="barDiag")) +
   theme_minimal()
 ```
 
@@ -646,7 +628,7 @@ kable_styling(kable(tab,
                                     "responsive"), full_width=TRUE)
 ```
 
---- 
+---
 
 ```{r, cache=TRUE, warning=FALSE}
 library(ggplot2)
@@ -654,7 +636,7 @@ load(file="jeperrorfig.RData")
 print(fig)
 ```
 
---- 
+---
 
 ```{r, cache=TRUE, warning=FALSE}
 load(file="jeperrorfig.RData")
@@ -763,39 +745,54 @@ rf <- regression_forest(X[train,],y[train],tune.parameters = TRUE)
 y.hat.rf  <-  predict(rf, X)$predictions
 df <- rbind(df, data.frame(y=y, y.hat=y.hat.rf, train=train,
                            method="random forest"))
+
+# Neural network
+library(RSNNS)
+n <- nrow(X[train,])
+p <- ncol(X)
+rn <- floor(n^(1/(2*(1+1/(1+p))))/2)
+xn <- normalizeData(X)
+yn <- normalizeData(y)
+nn <- mlp(x=xn[train,], y=yn[train], linOut=TRUE, size=rn)
+yn.hat.nn <- predict(nn, xn)
+y.hat.nn <- denormalizeData(yn.hat.nn, getNormParameters(yn))
+df <- rbind(df, data.frame(y=y, y.hat=y.hat.nn, train=train,
+                           method="neural network"))
 ```
 
 ---
 
-```{r, pipelinePredPlot, cache=TRUE, warning=FALSE}
+```{r, pipelinePredPlot, cache=TRUE, warning=FALSE, dependson=c("loadpipeline","pipeline-predict")}
 ggplot(data=df,aes(x=y,y=y.hat,colour=method,shape=train)) +  geom_point(alpha=0.5) +
   geom_line(aes(y=y)) + theme_minimal()
 ```
 
 ---
 
-```{r, pipelineErrorPlot, cache=TRUE, warning=FALSE}
+```{r, pipelineErrorPlot, cache=TRUE, warning=FALSE, dependson=c("loadpipeline","pipeline-predict")}
+df$trainf <- factor(df$train, levels=c("TRUE", "FALSE"))
 df$error <- df$y - df$y.hat
 ggplot(data=df,aes(x=error,colour=method)) +
   geom_density() + theme_minimal() +
   xlim(quantile(df$error,c(0.01,0.99))) +
-  facet_grid(train ~ .,labeller=label_both)
+  facet_grid(trainf ~ .,labeller=label_both)
 ```
 
 ---
 
-```{r, pipelinePredSummary, cache=TRUE, results='as-is'}
+```{r, pipelinePredSummary, cache=TRUE, results='as-is', dependson=c("loadpipeline","pipeline-predict")}
+
 library(kableExtra)
 fn <- function(df)  with(df,c(mean((y.hat - y)^2)/var(y),
                               mean(abs(y.hat - y))/mean(abs(y-mean(y)))))
 tab1 <-unlist(by(subset(df,train), df$method[train],  FUN=fn))
 tab1 <- (matrix(tab1,nrow=2))
 rownames(tab1) <- c("relative MSE","relative MAE")
-colnames(tab1) <- c("OLS","Lasso","Random forest")
+colnames(tab1) <- c("OLS","Lasso","Random forest","Neural Network")
 tab2 <- unlist(by(subset(df,!train), df$method[!train],  FUN=fn))
 tab2 <- (matrix(tab2,nrow=2))
 rownames(tab2) <- c("relative MSE","relative MAE")
-colnames(tab2) <- c("OLS","Lasso","Random forest")
+colnames(tab2) <- c("OLS","Lasso","Random forest","Neural Network")
 
 kable_styling(kable(tab1, caption="Training sample", format="html", digits=3),
               bootstrap_options = c("striped", "hover", "condensed",
@@ -907,7 +904,6 @@ for(c in 2:ncol(mod$x)) {
 }
 lassoPath <- glmnet(mod$x, mod$y, alpha=1)
 plot(lassoPath, xvar="lambda", label=TRUE)
-
 ```
 
 ---
@@ -975,7 +971,7 @@ function (all that matters here is that $\zeta(2a)$ is finite for
 $2a>1$).  Then if $s \propto n^{(1+\delta)/2a}$, we would get $c_s \lesssim
 n^{-(1+\delta)/2}$. Importantly, $\sqrt{n} c_s = o(1)$, so in the sort of
 expansions that we would do to show that $\hat{\theta}$ is $\sqrt{n}$
-asymptotically normal, the bias term would vanish. 
+asymptotically normal, the bias term would vanish.
 
 <!-- Lasso can also be applied to nonparametric regression models such as -->
 <!-- $$ -->
@@ -998,7 +994,7 @@ asymptotically normal, the bias term would vanish.
 
 </div>
 
---- 
+---
 
 ### Rate of convergence
 
@@ -1060,7 +1056,7 @@ $$
 
 </div>
 
---- 
+---
 
 ### Rate of convergence{-}
 
@@ -1073,10 +1069,10 @@ $$
 
 <div class="notes">
 These results are for an exactly sparse setting. Do they hold
-under approximate sparsity? 
+under approximate sparsity?
 </div>
 
---- 
+---
 
 ### Other statistical properties
 
@@ -1089,7 +1085,7 @@ under approximate sparsity?
     - Under stronger conditions, Lasso correctly selects the nonzero
       components of $\beta_0$
     - See @belloni2011
-    
+
 <div class="notes">
 In the statistics literature on high dimensional and nonparametric
 estimation, you will come across the terms "adaptive" and "honest."
@@ -1099,7 +1095,7 @@ the sparsity index of the true model, $s$, is an unknown parameter
 affecting the rate of convergence. Without knowing or estimating $s$,
 Lasso attains the above rate of convergence for a wide range of
 admissable $s$. Thus, Lasso is adaptive to the unknown sparsity
-index. 
+index.
 
 "Honest" is a property of an inference method. A confidence region is
 honest if it has correct coverage for a large class of true
@@ -1111,11 +1107,11 @@ honesty is impossible in the most general setting. For example,
 although an $\ell$ times differentiable function of a $p$ dimensional
 variable can be adaptively estimated at rate $n^{-\ell}{2\ell + p}$,
 @li1989 showed that an honest confidence region can contract at most
-at rate $n^{-1/4}$ (not adaptive to $\ell$). 
+at rate $n^{-1/4}$ (not adaptive to $\ell$).
 However, an adaptive confidence region can be constructed if further
 restrictions are placed on the set of possible models, see @nickl2013
 for such a result for Lasso..
-</div> 
+</div>
 
 ---
 
@@ -1153,8 +1149,8 @@ details.
 
 - $y_i \in R$ on $x_i \in \R^p$
 - Want to estimate $\Er[y | x]$
-- Locally constant estimate 
-$$ 
+- Locally constant estimate
+$$
 \hat{t}(x) = \sum_m^M c_m 1\{x \in R_m \}
 $$
 - Rectangular regions $R_m$ determined by tree
@@ -1172,7 +1168,7 @@ f <- function(x,z) {
 }
 f0 <- f(x,y)
 z <- f0 + rnorm(n)*0.1
-
+tree.df <- data.frame(x=x,y=y,z=z)
 # plot true function and data
 x.g <- seq(0,1,length.out=100)
 y.g <- seq(0,1,length.out=100)
@@ -1189,20 +1185,9 @@ fig
 
 ### Estimated tree
 
-```{r, treefit, cache=FALSE}
-library(party)
-n <- 1000
-x <- runif(n)
-y <- runif(n)
-f <- function(x,z) {
-  1/3*(sin(5*x)*sqrt(z)*exp(-(z-0.5)^2))
-}
-f0 <- f(x,y)
-z <- f0 + rnorm(n)*0.1
-
-
+```{r, treefit, cache=TRUE, dependson="tree"}
 # fit regression tree
-tree <- ctree(z ~ x + y)
+tree <- ctree(z ~ x + y, data=tree.df)
 
 # plot estimate
 x.g <- seq(0,1,length.out=100)
@@ -1221,16 +1206,16 @@ fig
 
 ### Estimated tree
 
-```{r, treeplot, cache=FALSE}
+```{r, treeplot, cache=TRUE, dependson="treefit"}
 plot(tree)
 ```
 
 ---
 
-### Tree algorithm 
+### Tree algorithm
 
 - For each region, solve
-$$ 
+$$
     \min_{j,s} \left[ \min_{c_1} \sum_{i: x_{i,j} \leq s, x_i \in R}
         (y_i - c_1)^2 + \min_{c_2} \sum_{i: x_{i,j} > s, x_i \in R}
         (y_i - c_2)^2 \right]
@@ -1238,7 +1223,7 @@ $$
 - Repeat with $R = \{x:x_{i,j} \leq s^*\} \cap R$ and $R =
    \{x:x_{i,j} \leq s^*\} \cap R$
 - Stop when $|R| =$ some chosen minimum size
-- Prune tree 
+- Prune tree
 $$ \min_{tree \subset T} \sum (\hat{f}(x)-y)^2 + \alpha|\text{terminal
 nodes in tree}| $$
 
@@ -1249,17 +1234,17 @@ all have some kind of stopping rule, but not necessarily the same
 one. For example, some algorithms stop splitting into new branches
 when the improvement in $R^2$ becomes small. These trees don't need
 subsequent pruning, but also may fail to find later splits that might
-be important. 
+be important.
 
 As with lasso, regression trees involve some regularization. In the
 above description, both the minimum leaf size and $\alpha$ in the
-pruning step serve as regularization parameters. 
+pruning step serve as regularization parameters.
 
 A potential advantage of regression trees is that their output might
 be interpretable, especially if there are not many branches. Some
 disadvantages are that they often are not very good predictors, and
 small perturbations in data can lead to seemingly large changes in the
-tree. 
+tree.
 </div>
 ---
 
@@ -1267,9 +1252,9 @@ tree.
 
 - Average randomized regression trees
 - Trees randomized by
-    - Bootstrap or subsampling 
-    - Randomize branches: 
-    $$ 
+    - Bootstrap or subsampling
+    - Randomize branches:
+    $$
     \min_{j \in S,s} \left[ \min_{c_1} \sum_{i: x_{i,j} \leq s, x_i \in R}
         (y_i - c_1)^2 + \min_{c_2} \sum_{i: x_{i,j} > s, x_i \in R}
         (y_i - c_2)^2 \right]
@@ -1284,21 +1269,21 @@ tree.
 - $x \in [0,1]^p$, $\Er[y|x]$ Lipschitz in $x$
 - Crude calculation for single tree, let denote $R_i$ node that
   contains $x_i$
- $$ 
+ $$
   \begin{align*}
   \Er(\hat{t}(x_i) - \Er[y|x_i])^2 = & \overbrace{\Er(\hat{t}(x_i) -
-  \Er[y|x\in R_i])^2}^{variance} + 
+  \Er[y|x\in R_i])^2}^{variance} +
   \overbrace{(\Er[y|x \in R_i] - \Er[y|x])^2}^{bias^2} \\
   = & O_p(1/m) +  O\left(L^2
-  \left(\frac{m}{n}\right)^{2/p}\right) 
+  \left(\frac{m}{n}\right)^{2/p}\right)
   \end{align*}
   $$
-  optimal $m = O(n^{2/(2+p)})$ gives 
+  optimal $m = O(n^{2/(2+p)})$ gives
   $$
   \Er[(\hat{t}(x_i) - \Er[y|x_i])^2] = O_p(n^{\frac{-2}{2+p}})
   $$
 
-<div class="notes"> 
+<div class="notes">
 By a crude calculation, I mean lets treat the tree
 as fixed. The the variance term is simply from estimating a
 conditional mean. This analysis could be made more rigorous by
@@ -1306,7 +1291,7 @@ assuming the tree was estimated by sample splitting --- use half the
 data to construct the tree and the remaining half to estimate the mean
 of $y$ in each node. Athey and Wager, and others, refer to such
 trees as "honest." I suppose that this is because sample splitting
-facilitates honest inference afterward. 
+facilitates honest inference afterward.
 
 The order of the bias term comes from considering the width of the
 pieces of a $p$ dimensional cube split evenly into $n/m$ pieces.
@@ -1342,11 +1327,11 @@ should come as no surprise that the rate of convergence would be slow.
   $$
   \Er[(\hat{t}(x_i) - \Er[y|x_i])^2] = O_p(n^{\frac{-0.75}{s\log 2+0.75}})
   $$
-  
+
 <div class="notes">
 This result from @biau2012 assumes the forest is estimated with
 sample splitting. This avoids the difficult to analyze correlation
-between the nodes and $y$. 
+between the nodes and $y$.
 
 @wager2015 analyze what happens when the same data is used to
 construct the tree and average in each node. They get a slightly
@@ -1355,13 +1340,13 @@ higher upper bound for the variance of $\frac{\log(p)\log(n)}{m}$.
 analysis treated $p$ as fixed.
 
 These convergence rate results for random forests are not fast enough
-for our purpose. Does this mean that random 
+for our purpose. Does this mean that random
 forests should not be used in semiparametric estimation? Not
 necessarily. We're asking too much of random forests. There is no
 estimator for an arbitrary Lipschitz function that can have fast
 enough a rate of convergence.  A restriction on the set of
 possible functions is needed to reduce the approximation bias. With
-Lasso, the assumption of (approximate) sparsity played that role. 
+Lasso, the assumption of (approximate) sparsity played that role.
 @chernozhukov2018 advise that random
 forests could be a good choice for semiparametric estimation when the
 function of interest is "well-approximated by a random forest."
@@ -1373,7 +1358,7 @@ describe the class of functions well-approximated by a forest.
 
 ### Other statistical properties
 
-- Pointwise asymptotic normality : @wager2018 
+- Pointwise asymptotic normality : @wager2018
 
 <div class="notes">
 
@@ -1386,13 +1371,13 @@ describe the class of functions well-approximated by a forest.
 ### Simulation study
 
 - Partially linear model
-- DGP : 
+- DGP :
     - $x_i \in \R^p$ with $x_{ij} \sim U(0,1)$
     - $d_i = m(x_i) + v_i$
     - $y_i = d_i\theta + f(x_i) + \epsilon_i$
     - $m()$, $f()$ either linear or step functions
 - Estimate by OLS, Lasso, and random forest
-    - Lasso & random forest use orthogonal moments 
+    - Lasso & random forest use orthogonal moments
     $$
      \En[(d_i - \hat{m}(x_i))(y_i - \hat{\mu}(x_i) -  \theta (d_i - \hat{m}(x_i)))] = 0
     $$
@@ -1402,13 +1387,13 @@ The point of this simulation is to see whether the slower convergence
 rate of random forests matters for the semiparametric problems we have
 in mind. Our theory results suggest that estimates of $\theta$ using
 random forests with $p>2$ will be asymptotically biased. Specifically,
-the term 
-$$ 
+the term
+$$
 d_n = \En[(m(x_i) - \hat{m}(x_i))(\mu(x_i) - \hat{\mu}(x_i))]
 $$
 will be $O_p(n^{\frac{-2}{2+p}})$, so $\sqrt{n} d_n =
 O_p(n^{\frac{p-2}{2(2+p)}})$. However, this calculation is only an
-upper bound on $d_n$. For a given DGP, $d_n$ might be smaller. 
+upper bound on $d_n$. For a given DGP, $d_n$ might be smaller.
 
 In this simulation exercise, when $m()$ and $f()$ are linear, they are
 not easy to approximate by a regression tree, so I expect the random
@@ -1421,9 +1406,9 @@ and Lasso, $x$ is still only included linearly in the estimation, so
 those estimators will do poorly in the step function DGP. Throughout
 the simulation $p$ is much less than $n$, so Lasso and OLS will
 generally give very similar results.
-</div> 
+</div>
 
---- 
+---
 
 ```{r, code=readLines("partialLinear.R"), eval=FALSE}
 ```
@@ -1445,7 +1430,7 @@ ggplot(subset(df,p==2), aes(x=value, colour=variable)) +
 
 ---
 
-```{r, plsim3, cache=TRUE}
+```{r, plsim3, cache=TRUE, dependson="plsim"}
 ggplot(subset(df,p==4), aes(x=value, colour=variable)) +
   facet_grid(n ~ design) + geom_density() + theme_minimal() +
   xlab(unname(TeX("$\\sqrt{n}(\\hat{\\theta} - \\theta_0)$"))) +
@@ -1455,7 +1440,7 @@ ggplot(subset(df,p==4), aes(x=value, colour=variable)) +
 
 ---
 
-```{r, plsim4, cache=TRUE}
+```{r, plsim4, cache=TRUE, dependson="plsim"}
 ggplot(subset(df,p==6), aes(x=value, colour=variable)) +
   facet_grid(n ~ design) + geom_density() + theme_minimal() +
   xlab(unname(TeX("$\\sqrt{n}(\\hat{\\theta} - \\theta_0)$"))) +
@@ -1465,7 +1450,7 @@ ggplot(subset(df,p==6), aes(x=value, colour=variable)) +
 
 ---
 
-```{r, plsim8, cache=TRUE}
+```{r, plsim8, cache=TRUE, dependson="plsim"}
 ggplot(subset(df,p==8), aes(x=value, colour=variable)) +
   facet_grid(n ~ design) + geom_density() + theme_minimal() +
   xlab(unname(TeX("$\\sqrt{n}(\\hat{\\theta} - \\theta_0)$"))) +
@@ -1479,7 +1464,7 @@ when the functions being estimated are step functions, random forests
 do not produce a good estimate of $\theta$. One caveat here is that I
 was not very careful about the tuning parameters for the random
 forests. It's possible that there exists a careful choice of tuning
-parameters that results in a better estimator. 
+parameters that results in a better estimator.
 
 <div class="alert alert-danger">
 ***Research idea:*** create a generalization of random forests that is
@@ -1489,7 +1474,7 @@ papers on adaptive regression estimators are @speckman1985 and
 estimator. Combining their idea of using forests to form local
 neighborhoods with a smoothness adaptive variant of kernel or local
 polynomial regression should lead to a smoothness adaptive
-forest. 
+forest.
 </div>
 </div>
 
@@ -1501,53 +1486,76 @@ forest.
 
 ## Neural Networks
 
-- Target function $f: \R^p \to \R$ 
+- Target function $f: \R^p \to \R$
     - e.g. $f(x) = \Er[y|x]$
 - Approximate with single hidden layer neural network :
 $$
 \hat{f}(x) = \sum_{j=1}^r \beta_j (a_j'a_j \vee 1)^{-1}
 \psi(a_j'x + b_j)
 $$
-    - Activation function $\psi$ 
-       - Sigmoid $\psi(t) = 1/(1+e^{-t})$
-       - Tanh $\psi(t) = \frac{e^t -e^{-t}}{e^t + e^{-t}}$
-       - Rectified linear $\psi(t) = t 1(t\geq 0)$
+    - Activation function $\psi$
+       - Examples: Sigmoid $\psi(t) = 1/(1+e^{-t})$, Tanh $\psi(t) =
+         \frac{e^t -e^{-t}}{e^t + e^{-t}}$, Heavyside $\psi(t) = t 1(t\geq 0)$
     - Weights $a_j$
     - Bias $b_j$
 - Able to approximate any $f$, @hornik1989
 
 ---
 
+```{r, nnpic, cache=TRUE, warning=FALSE, message=FALSE}
+library(RSNNS)
+library(devtools)
+# download plot.nnet function from github
+source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
+
+load("~/natural-gas-pipelines/dataAndCode/pipelines.Rdata")
+data <- subset(data,report_yr>=1996)
+mod <- lm(transProfit ~ transPlant_bal_beg_yr + reserve  + wellPrice +
+            cityPrice + plantArea + heatDegDays, data=data, x=T, y=T)
+
+xn <- normalizeData(mod$x[,2:ncol(mod$x)])
+yn <- normalizeData(mod$y)
+nn <- mlp(x=xn, y=yn, linOut=TRUE, size=c(10))
+plot.nnet(nn, x.lab=colnames(mod$x)[2:ncol(mod$x)], y.lab="transProfit")
+```
+
+---
+
 ### Deep Neural Networks
 
 - Many hidden layers
-    - $x^{(0)} = x$ 
-    - $x^{(\ell)}_j = \psi(a_j^{(\ell)} x^{(\ell-1)} + b_j^{(\ell)})
+    - $x^{(0)} = x$
+    - $x^{(\ell)}_j = \psi(a_j^{(\ell)} x^{(\ell-1)} + b_j^{(\ell)})$
+
+---
+
+```{r, deepnnpic, cache=TRUE, dependson="nnpic", warning=FALSE, message=FALSE}
+nn <- mlp(x=xn, y=yn, linOut=TRUE, size=c(5,10,3,5, 6))
+plot.nnet(nn, x.lab=colnames(mod$x)[2:ncol(mod$x)], y.lab="transProfit")
+```
 
 ---
 
 ### Rate of convergence
 
 - @chen1999
-- $f(x) = \Er[y|x]$ with Fourier representation 
+- $f(x) = \Er[y|x]$ with Fourier representation
 $$ f(x) = \int e^{i a'x} d\sigma_f(a) $$
-  where $\int (\sqrt{a'a} \vee 1) d|\sigma_f|(a) < \infty$ 
+  where $\int (\sqrt{a'a} \vee 1) d|\sigma_f|(a) < \infty$
 - Network sieve :
-$$ \mathcal{G}_n) = \{
+$$ \begin{align*}
+\mathcal{G}_n = \{ &
 g: g(x) = \sum_{j=1}^{r_n} \beta_j (a_j'a_j \vee 1)^{-1}
-\psi(a_j'x + b_j)\;,\; \norm{\beta}_1 \leq B_n \}
-$$
-- Estimate 
-$$
-\hat{f} = \argmin_{g \in \mathcal{G}_n} \En [(y_i - g(x_i))^2] 
+\psi(a_j'x + b_j), \\ & \norm{\beta}_1 \leq B_n \}
+\end{align*}
 $$
 
 
-<div class="notes>
+<div class="notes">
 The setup in @chen1999 is more general. They consider estimating both
 $f$ and its first $m$ derivatives. Here, we focus on the case of just
 estimating $f$. @chen1999 also consider estimation of functions other
-than conditional expectations. 
+than conditional expectations.
 
 The restriction on $f$ in the second bullet is used to control
 approximation error. The second bullet says that $f$ is the inverse
@@ -1556,28 +1564,121 @@ on $f$ comes from the requirement that $\sigma_f$ be absolutely
 integral, $\int (\sqrt{a'a} \vee 1) d|\sigma_f|(a) < \infty$. It would
 be a good exercise to check whether this restriction is satisfied by
 some familiar types of functions. @barron1993 first showed that neural
-networks approximate this class of functions well, and compares his
-result to other function approximation results. 
+networks approximate this class of functions well, and compares the
+approximation rate of neural networks to other function approximation
+results.
 </div>
 
 ---
 
-### Rate of convergence
+### Rate of convergence{-}
 
-- For fixed $p$, if $r_n^{2(1+1/(1+p))} \log(r_n) = O(n)$, $B_n \geq $ some constant
+- Estimate
+$$
+\hat{f} = \argmin_{g \in \mathcal{G}_n} \En [(y_i - g(x_i))^2]
+$$
+
+- For fixed $p$, if $r_n^{2(1+1/(1+p))} \log(r_n) = O(n)$, $B_n \geq$ some constant
   $$
-\Er[(\hat{f}(x) - f(x))^2] = O\left((n/\log(n))^{\frac{-1 + 2/(p+1)}
-{2(1+1/(p+1))}}\right) 
+\Er[(\hat{f}(x) - f(x))^2] = O\left((n/\log(n))^{\frac{-(1 + 2/(p+1))}
+{2(1+1/(p+1))}}\right)
   $$
 
-<div class="notes>
+<div class="notes">
 It is easy to see that regardless of $p$, $\sqrt{n}\Er[(\hat{f}(x) -
 f(x))^2] \to 0$. Therefore, neural networks would be suitable for
-estimating the nuisance functions in our examples above. 
+estimating the nuisance functions in our examples above.
+
+There is a gap between applied use of neural networks and this
+statistical theory. These rate results are for networks with a single
+hidden layer. In prediction applications, the best performance is
+typically achieved by deep neural networks with many hidden
+layers. Intuitively, multiple hidden layers should do at least as well
+as a single hidden layer.
 </div>
 
 ---
-    
+
+### Simulation Study
+
+- Same setup as for random forests earlier
+- Partially linear model
+- DGP :
+    - $x_i \in \R^p$ with $x_{ij} \sim U(0,1)$
+    - $d_i = m(x_i) + v_i$
+    - $y_i = d_i\theta + f(x_i) + \epsilon_i$
+    - $m()$, $f()$ either linear or step functions
+- Estimate by OLS, Neural network with & without cross-fitting
+    - Using orthogonal moments
+    $$
+     \En[(d_i - \hat{m}(x_i))(y_i - \hat{\mu}(x_i) -  \theta (d_i - \hat{m}(x_i)))] = 0
+    $$
+
+---
+
+```{r, code=readLines("partialLinearNet.R"), eval=FALSE}
+```
+
+```{r, plsimnet, cache=TRUE}
+library(ggplot2)
+library(reshape2)
+library(latex2exp)
+TeX <- latex2exp::TeX
+load("partialLinearSimNet.Rdata") # see partialLinearSim.R for simulation
+                               # code
+df <- melt(sim.df, measure.vars=names(sim.df)[1:3])
+ggplot(subset(df,p==2), aes(x=value, colour=variable)) +
+  facet_grid(n ~ design) + geom_density() + theme_minimal() +
+  xlab(TeX('$\\sqrt{n}(\\hat{\\theta}-\\theta_0)$')) +
+  ggtitle("p=2")
+
+```
+
+---
+
+```{r, plsimnet3, cache=TRUE, dependson="plsimnet"}
+ggplot(subset(df,p==4), aes(x=value, colour=variable)) +
+  facet_grid(n ~ design) + geom_density() + theme_minimal() +
+  xlab(unname(TeX("$\\sqrt{n}(\\hat{\\theta} - \\theta_0)$"))) +
+  ggtitle("p=4")
+
+```
+
+---
+
+```{r, plsimnet4, cache=TRUE, dependson="plsimnet"}
+ggplot(subset(df,p==6), aes(x=value, colour=variable)) +
+  facet_grid(n ~ design) + geom_density() + theme_minimal() +
+  xlab(unname(TeX("$\\sqrt{n}(\\hat{\\theta} - \\theta_0)$"))) +
+  ggtitle("p=6")
+
+```
+
+---
+
+```{r, plsimnet8, cache=TRUE, dependson="plsimnet"}
+ggplot(subset(df,p==8), aes(x=value, colour=variable)) +
+  facet_grid(n ~ design) + geom_density() + theme_minimal() +
+  xlab(unname(TeX("$\\sqrt{n}(\\hat{\\theta} - \\theta_0)$"))) +
+  ggtitle("p=8")
+```
+<div class="notes">
+The performance of the neural network estimator appears okay, but not
+outstanding in these simulations. In the linear model, the neural
+network estimator performs slightly worse than OLS. In the step function
+model, the neural network estimator performs slight better than the
+misspecified OLS, but neither appears to work well. In both cases, it
+appears that the neural network estimator produces occassional
+outliers. I believe that this is related to the fact that the
+minimization problem defining the neural network is actually very
+difficult to solve. In the simulation above, I suspect the outlying
+estimates are due to minimization problems. In the simulations, I
+simply set $r_n = n^{1/(2(1+1/(1+p)))}$. It's likely that a more
+careful choice of $r_n$, perhaps using cross-validation, would give
+better results.
+</div>
+
+
 <!-- --------------------------------------------------------------->
 
 # Using machine learning to estimate causal effects
@@ -1585,32 +1686,525 @@ estimating the nuisance functions in our examples above.
 ## Double debiased machine learning
 
 - @chernozhukov2018, @chernozhukov2017
- 
 
-<!-- --- -->
+- Parameter of interest $\theta \in \R^{d_\theta}$
 
-## Partially linear model with lasso
+- Nuisance parameter $\eta \in T$
 
-<!-- --- -->
+- Moment conditions
+$$
+\Er[\psi(W;\theta_0,\eta_0) ] = 0 \in \R^{d_\theta}
+$$
+with $\psi$ known
 
-## IV with lasso
+- Estimate $\hat{\eta}$ using some machine learning method
 
-<!-- --- -->
+- Estimate $\hat{\theta}$ using cross-fitting
 
-## ATE
+---
 
-- role of orthogonality
+### Cross-fitting
 
-<!-- --- -->
+- Randomly partition into $K$ subsets $(I_k)_{k=1}^K$
+- $I^c_k = \{1, ..., n\} \setminus I_k$
+- $\hat{\eta}_k =$ estimate of $\eta$ using $I^c_k$
+- Estimator:
+$$
+\begin{align*}
+0 = & \frac{1}{K} \sum_{k=1}^K \frac{K}{n} \sum_{i \in I_k}
+\psi(w_i;\hat{\theta},\hat{\eta}_k) \\
+0 = & \frac{1}{K} \sum_{k=1}^K \En_k[
+\psi(w_i;\hat{\theta},\hat{\eta}_k)]
+\end{align*}
+$$
 
-## ATE with random forests
+---
 
-- @athey2016, @wager2018, etc
-<!-- --- -->
+### Assumptions
 
-## IV and LATE with random forests
+- Linear score
+$$
+\psi(w;\theta,\eta) = \psi^a(w;\eta) \theta + \psi^b(w;\eta)
+$$
+- Near Neyman orthogonality:
+$$
+\lambda_n := \sup_{\eta \in \mathcal{T}_n} \norm{\partial \eta
+\Er\left[\psi(W;\theta_0,\eta_0)[\eta-\eta_0] \right] } \leq \delta_n
+n^{-1/2}
+$$
 
-- @athey2016, @wager2018, etc
+---
+
+### Assumptions{-}
+
+- Rate conditions: for $\delta_n \to 0$ and $\Delta_n \to 0$, we have
+$\Pr(\hat{\eta}_k \in \mathcal{T}_n) \geq 1-\Delta_n$ and
+$$
+\begin{align*}
+r_n := & \sup_{\eta \in \mathcal{T}_n} \norm{ \Er[\psi^a(W;\eta)] -
+\Er[\psi^a(W;\eta_0)]} \leq \delta_n \\
+r_n' := & \sup_{\eta \in \mathcal{T}_n} \Er\left[ \norm{ \psi(W;\theta_0,\eta) -
+    \psi(W;\theta_0,\eta_0)}^2 \right]^{1/2} \leq \delta_n \\
+\lambda_n' := & \sup_{r \in (0,1), \eta \in \mathcal{T}_n} \norm{
+\partial_r^2 \Er\left[\psi(W;\theta_0, \eta_0 + r(\eta - \eta_0))
+\right]} \leq \delta_n/\sqrt{n}
+\end{align*}
+$$
+- Moments exist and other regularity conditions
+
+<div class="notes">
+We focus on the case of linear scores to simplify
+proofs and all of our examples have scores linear in $\theta$.
+@chernozhukov2018 cover nonlinear scores as well.
+
+These rate conditions might look a little strange. The rate conditions are stated
+this way because they're exactly what is needed for the result to
+work.
+$\Delta_n$ and $\delta_n$ are sequences converging to $0$. $\mathcal{T}_n$ is a
+shrinking neighborhood of $\eta_0$.
+A good exercise would be show that if $\psi$ a smooth function
+of $\eta$ and $\theta$, and $\Er[(\hat{\eta}(x) - \eta_0(x))^2]^{1/2}
+= O(\epsilon_n) = o(n^{-1/4})$, then we can meet the above conditions
+with $r_n = r_n' = \epsilon_n$ and $\lambda_n' = \epsilon_n^2$.
+</div>
+
+---
+
+### Proof outline:
+
+- Let $\hat{J} = \frac{1}{K} \sum_{k=1}^K \En_k
+  [\psi^a(w_i;\hat{\eta}_k)]$, $J_0 = \Er[\psi^a(w_i;\eta_0)]$,
+  $R_{n,1} = \hat{J}-J_0$
+  
+- Show:
+$$
+\small
+\begin{align*}
+\sqrt{n}(\hat{\theta} - \theta_0) = & -\sqrt{n} J_0^{-1}
+\En[\psi(w_i;\theta_0,\eta_0)] + \\
+& + (J_0^{-1} - \hat{J}^{-1})
+\left(\sqrt{n} \En[\psi(w_i;\theta_0,\eta_0)] + \sqrt{n}R_{n,2}\right) + \\
+& + \sqrt{n}J_0^{-1}\underbrace{\left(\frac{1}{K} \sum_{k=1}^K \En_k[
+\psi(w_i;\theta_0,\hat{\eta}_k)] - \En[\psi(w_i;\theta_0,\eta_0)]\right)}_{R_{n,2}}
+\end{align*}
+$$
+
+- Show $\norm{R_{n,1}} = O_p(n^{-1/2} + r_n)$
+
+- Show $\norm{R_{n,2}}= O_p(n^{-1/2} r_n' + \lambda_n + \lambda_n')$
+
+<div class="notes">
+For details see the appendix of @chernozhukov2018.
+</div>
+
+---
+
+### Proof outline: Lemma 6.1
+
+Lemma 6.1
+
+(a) If $\Pr(\norm{X_m} > \epsilon_m | Y_m) \to_p 0$, then
+    $\Pr(\norm{X_m}>\epsilon_m) \to 0$.
+
+(b) If $\Er[\norm{X_m}^q/\epsilon_m^q | Y_m] \to_p 0$ for $q\geq 1$,
+    then $\Pr(\norm{X_m}>\epsilon_m) \to 0$.
+
+(c) If $\norm{X_m} = O_p(A_m)$ conditional on $Y_m$ (i.e. for any
+    $\ell_m \to \infty$, $\Pr(\norm{X_m} > \ell_m A_m | Y_m) \to_p
+    0$), then $\norm{X_m} = O_p(A_m)$ unconditionally
+
+<div class="notes">
+(a) by dominated convergence
+(b) from Markov's inequality
+(c) follows from (a)
+</div>
+
+---
+
+### Proof outline: $R_{n,1}$
+
+$$
+R_{n,1} = \hat{J}-J_0 = \frac{1}{K} \sum_k \left(
+   \En_k[\psi^a(w_i;\hat{\eta}_k)] - \Er[\psi^a(W;\eta_0)] \right)
+$$
+
+- $\norm{\En_k[\psi^a(w_i;\hat{\eta}_k)] - \Er[\psi^a(W;\eta_0)]} \leq
+  U_{1,k} + U_{2,k}$
+  where
+  $$
+  \begin{align*}
+  U_{1,k} = & \norm{\En_k[\psi^a(w_i;\hat{\eta}_k)] -
+   \Er[\psi^a(W;\hat{\eta}_k)| I^c_k]} \\
+  U_{2,k} = & \norm{ \Er[\psi^a(W;\hat{\eta}_k)| I^c_k] -
+  \Er[\psi^a(W;\eta_0)]}
+  \end{align*}
+  $$
+
+---
+
+### Proof outline: $R_{n,2}$
+
+- $R_{n,2} = \frac{1}{K} \sum_{k=1}^K \En_k\left[
+  \psi(w_i;\theta_0,\hat{\eta}_k) - \psi(w_i;\theta_0,\eta_0) \right]$
+- $\sqrt{n} \norm{\En_k\left[ \psi(w_i;\theta_0,\hat{\eta}_k) -
+  \psi(w_i;\theta_0,\eta_0) \right]} \leq U_{3,k} + U_{4,k}$
+  where
+
+$$
+\small
+\begin{align*}
+  U_{3,k} = & \norm{ \frac{1}{\sqrt{n}} \sum_{i \in I_k} \left(
+      \psi(w_i;\theta_0, \hat{\eta}_k) - \psi(w_i;\theta_0,\eta_0) -
+      \Er[ \psi(w_i;\theta_0, \hat{\eta}_k) -
+           \psi(w_i;\theta_0,\eta_0)] \right) } \\
+  U_{4,k} = & \sqrt{n} \norm{ \Er[
+  \psi(w_i;\theta_0, \hat{\eta}_k) | I_k^c] - \Er[\psi(w_i;\theta_0,\eta_0)]}
+\end{align*}
+$$
+
+- $U_{4,k} = \sqrt{n} \norm{f_k(1)}$ where
+
+$$
+f_k(r) = \Er[\psi(W;\theta_0,\eta_0 + r(\hat{\eta}_k - \eta_0)) |
+I^c_k] - \Er[\psi(W;\theta_0,\eta_0)]
+$$
+
+---
+
+### Asymptotic normality
+
+$$ \sqrt{n} \sigma^{-1} (\hat{\theta} - \theta_0) = \frac{1}{\sqrt{n}}
+\sum_{i=1}^n \bar{\psi}(w_i) + O_p(\rho_n) \leadsto N(0,I) $$
+
+- $\rho_n := n^{-1/2} + r_n + r_n' + n^{1/2} (\lambda_n +\lambda_n')
+  \lesssim \delta_n$
+
+- Influence function
+$$\bar{\psi}(w) = -\sigma^{-1} J_0^{-1} \psi(w;\theta_0,\eta_0)$$
+
+- $\sigma^2 := J_0^{-1} \Er[\psi(w;\theta_0,\eta_0) \psi(w;\theta_0,\eta_0)'](J_0^{-1})'$
+
+<div class="notes">
+This is the DML2 case of theorem 3.1 of @chernozhukov2018.
+</div>
+
+---
+
+### Creating orthogonal moments
+
+- Need
+$$
+ \partial \eta\Er\left[\psi(W;\theta_0,\eta_0)[\eta-\eta_0] \right]  \approx 0
+$$
+
+- Given an some model, how do we find a suitable $\psi$?
+
+---
+
+### Orthogonal scores via concentrating-out
+
+- Original model:
+$$
+(\theta_0, \beta_0) = \argmax_{\theta, \beta} \Er[\ell(W;\theta,\beta)]
+$$
+- Define
+$$
+\eta(\theta) = \beta(\theta) = \argmax_\beta \Er[\ell(W;\theta,\beta)]
+$$
+- First order condition from $\max_\theta
+\Er[\ell(W;\theta,\beta(\theta))]$ is
+$$
+0 = \Er\left[ \underbrace{\frac{\partial \ell}{\partial \theta} + \frac{\partial \ell}{\partial \beta} \frac{d \beta}{d \theta}}_{\psi(W;\theta,\beta(\theta))} \right]
+$$
+
+---
+
+### Orthogonal scores via projection
+
+- Original model: $m: \mathcal{W} \times \R^{d_\theta} \times \R^{d_h} \to \R^{d_m}$
+$$
+\Er[m(W;\theta_0,h_0(Z))|R] = 0
+$$
+- Let $A(R)$ be $d_\theta \times d_m$ moment selection matrix, $\Omega(R)$ $d_m \times d_m$ weighting matrix, and
+$$
+\begin{align*}
+\Gamma(R) = & \partial_{v'} \Er[m(W;\theta_0,v)|R]|_{v=h_0(Z)} \\
+G(Z) = & \Er[A(R)'\Omega(R)^{-1} \Gamma(R)|Z]
+\Er[\Gamma(R)'\Omega(R)^{-1} \Gamma(R) |Z]^{-1} \\
+\mu_0(R) = & A(R)'\Omega(R)^{-1} - G(Z) \Gamma(R)'\Omega(R)^{-1}
+\end{align*}
+$$
+- $\eta = (\mu, h)$ and
+$$ \psi(W;\theta, \eta) = \mu(R) m(W;\theta, h(Z)) $$
+
+<div class="notes">
+@chernozhukov2018 show how to construct orthogonal scores in a few
+examples via concentrating out and projection.  @chernozhukov2015 also
+discusses creating orthogonal scores. 
+</div>
+
+---
+
+### Example: average derivative
+
+- $x,y \in \R^1$, $\Er[y|x] = f_0(x)$, $p(x) =$ density of $x$
+
+- $\theta_0 = \Er[f_0'(x)]$
+
+- Joint objective
+$$
+\min_{\theta,f} \Er\left[ (y - f(x))^2 + (\theta - f'(x)^2) \right] 
+$$
+
+- $f_\theta(x) = \Er[y|x] + \theta \partial_x \log p(x) - f''(x) -
+  f'(x) \partial_x \log p(x)$
+
+- Concentrated objective: 
+$$ 
+\min_\theta \Er\left[ (y - f_\theta(x))^2 + (\theta - f_\theta'(x)^2)
+\right]
+$$
+
+- First order condition at $f_\theta = f_0$ gives
+$$
+0 = \Er\left[ (y - f_0(x))\partial_x \log p(x) + (\theta - f_0'(x)) \right]
+$$
+
+<div class="notes">
+We'll go over this derivation in lecture, but I don't think I'll have
+time to type it here. 
+
+See @cnr2018 for an approach to estimating average derivatives (and
+other linear in $\theta$ models) that doesn't require explicitly
+calculating an orthogonal moment condition.
+</div>
+
+---
+
+### Example : average derivative with endogeneity
+
+- $x,y \in \R^1$, $p(x) =$ density of $x$
+- Model : $\Er[y - f(x) | z] = 0$ $\theta_0 = \Er[f_0'(x)]$
+
+- Joint objective:
+$$
+\min_{\theta,f} \Er\left[ \Er[y - f(x)|z]^2 + (\theta - f'(x))^2 \right] 
+$$
+
+- $f_\theta(x) = (T^* T)^{-1}\left((T^*\Er[y|z])(x) - \theta \partial_x \log p(x)\right)$
+    - where $T:\mathcal{L}^2_{p} \to \mathcal{L}^2_{\mu_z}$ with 
+    $(T f)(z) = \Er[f(x) |z]$
+    - and $T^*:\mathcal{L}^2_{\mu_z} \to \mathcal{L}^2_{p}$ with 
+    $(T^* g)(z) = \Er[g(z) |x]$
+
+- Orthogonal moment condition :
+$$
+0 = \Er\left[ 
+\Er[y - f(x) | z] (T (T^* T)^{-1} \partial_x \log p)(z) +
+(\theta - f'(x)) 
+\right]
+$$
+
+<div class="notes">
+The first order condition for $f$ in the joint objective function is
+$$
+\begin{align*}
+0 = \Er \left[ \Er[y-f(x) |z]\Er[v(x)|z] + (\theta - f'(x))(-v'(x)) \right]
+\end{align*}
+$$
+Writing these expectations as integrals, integrating by parts to get
+rid of $v'(x)$, and
+switching the order of integration, gives
+$$
+\begin{align*}
+0 = \int_\mathcal{X} v(x)\left( \int_\mathcal{Z} \Er[y - f(x)|z] p(z|x) dz -
+(\theta-f'(x))\partial_x \log p(x) - f''(x) \right) p(x) dx
+\end{align*}
+$$
+Notice that integrating by parts $\int f''(x) p(x) dx = \int f' p'(x)
+dx$ eliminates the terms with $f'$ and $f''$, leaving
+$$
+\begin{align*}
+0 = \int_\mathcal{X} v(x)\left( \int_\mathcal{Z} \Er[y - f(x)|z] p(z|x) dz -
+\theta \partial_x \log p(x) \right) p(x) dx
+\end{align*}
+$$
+For this to be $0$ for all $v$, we need 
+$$
+0 = \int_\mathcal{Z} \Er[y - f(x)|z] p(z|x) dz -
+\theta \partial_x \log p(x) 
+$$
+or equivalently using $T$ and $T^*$,
+$$
+0 = \left(T^*(E[y|z] - T f)\right)(x)  -
+\theta \partial_x \log p(x) 
+$$
+Note that $T$ and $T^*$ are linear, and $T^*$ is the adjoint of
+$T$. Also, identification of $f$ requires $T$ is one to one. Hence, if
+$f$ is identified, $T^* T$ is invertible. Therefore, we can solve for
+$f$ as:
+$$
+f_\theta(x) = (T^* T)^{-1} \left( (T^* \Er[y |z])(x) - \theta \partial \log p(x) \right)
+$$
+Plugging $f_\theta(x)$ back into the objective function and then
+differentiating with respect to $\theta$ gives the orthogonal moment
+condition on the slide. Verifying that this moment condition is indeed
+orthogonal is slightly tedious. Writing out some of the expectations as
+integrals, changing order of integrations, and judiciously factoring
+out terms, will eventually lead to the desired conclusion. 
+
+@cfr2007 is an excellent review about estimating $(T^* T)^{-1}$ and 
+the inverses of other linear transformations.
+</div>
+
+---
+
+### Example: average elasticity
+
+- Demand $D(p)$, quantities $q$, instruments $z$
+$$\Er[q-D(p) |z] = 0$$
+
+- Average elasticity $\theta \Er[D'(p)/D(p) | z ]$
+
+- Joint objective :
+$$
+\min_{\theta,D} \Er\left[ \Er[q - D(p)|z]^2 + (\theta - D'(p)/D(p))^2  \right]
+$$
+
+---
+
+### Example: control function
+
+$$ 
+\begin{align*}
+0 = & \Er[d - p(x,z) | x,z] \\
+0 = & \Er[y - x\beta - g(p(x,z)) | x,z]
+\end{align*}
+$$
+
+--- 
+
+## Treatment heterogeneity
+
+- Potential outcomes model
+     - Treatment $d \in \{0,1\}$
+     - Potential outcomes $y(1), y(0)$
+     - Covariates $x$
+     - Unconfoundedness or instruments
+     
+ - Objects of interest:
+     - Conditional average treatment effect $s_0(x) = \Er[y(1) - y(0) | x]$
+     - Range and other measures of spread of conditional average
+       treatment effect
+     - Most and least affected groups
+
+---
+
+### Fixed, finite groups
+
+- $G_1, ..., G_K$ finite partition of support $(x)$
+
+- Estimate $\Er[y(1) - y(0) | x \in G_k]$ as above
+
+- pros: easy inference, reveals some heterogeneity
+
+- cons: poorly chosen partition hides some heterogeneity, searching 
+  partitions violates inference
+
+---
+
+### Generic Machine Learning Inference on Heterogenous Treatment Effects in Randomized Experiments 
+
+- @cddf2018
+
+- Use machine learning to find partition with sample splitting to
+  allow easy inference
+  
+- Randomly partition sample into auxillary and main samples
+
+- Use any method on auxillary sample to estimate 
+$$S(x) = \widehat{\Er[y(1) - y(0) | x]}$$
+and
+$$B(x) = \widehat{\Er[y(0)|x]}$$
+
+--- 
+
+### Generic Machine Learning Inference on Heterogenous Treatment Effects in Randomized Experiments{-}
+
+- Define $G_k = 1\{\ell_{k-1} \leq S(x) \leq \ell_k\}$
+- Use main sample to regress with weights $(P(x)(1-P(X)))^{-1}$
+$$ 
+y = \alpha_0 + \alpha_1 B(x) + \sum_k \gamma_k (d-P(X)) 1(G_k) +
+\epsilon 
+$$
+
+- $\hat{\gamma}_k \to_p \Er[y(1) - y(0) | G_k]$
+
+--- 
+
+### Best linear projection of CATE
+
+- Randomly partition sample into auxillary and main samples
+
+- Use any method on auxillary sample to estimate 
+$$S(x) = \widehat{\Er[y(1) - y(0) | x]}$$
+and
+$$B(x) = \widehat{\Er[y(0)|x]}$$
+
+- Use main sample to regress with weights $(P(x)(1-P(X)))^{-1}$
+$$ 
+y = \alpha_0 + \alpha_1 B(x) + \beta_0 (d-P(x)) + \beta_1
+(d-P(x))(S(x) - \Er[S(x)]) + \epsilon 
+$$
+
+- $\hat{\beta}_0, \hat{\beta}_1 \to_p \argmin_{b_0,b_1} \Er[(s_0(x) -
+  b_0 - b_1 (S(x)-E[S(x)]))^2]$
+
+---
+
+### Inference on CATE 
+
+- Inference on $\Er[y(1) - y(0) | x] = s_0(x)$ challenging when $x$
+  high dimensional and/or few restrictions on $s_0$ 
+
+- Pointwise results for random forests : @wager2018, @athey2016
+
+- Recent review of high dimensional inference : @bcchk2018
+
+--- 
+
+### Random forest asymptotic normality
+
+- @wager2018
+
+- $\mu(x) = \Er[y|x]$
+
+- $\hat{\mu}(x)$ estimate from honest random forest 
+
+    - honest $=$ trees independent of outcomes being averaged
+    
+    - sample-splitting or trees formed using another outcome
+
+- Then
+$$ \frac{\hat{\mu}(x) - \mu(x)}{\hat{\sigma}_n(x)} \leadsto N(0,1) $$
+    - $\hat{\sigma}_n(x) \to 0$ slower than $n^{-1/2}$ 
+    
+---
+
+### Random forest asymptotic normality
+
+- Results are pointwise, but what about?
+    - $H_0: \mu(x_1) = \mu(x_2)$
+    - $\{x: \mu(x) \geq 0 \}$
+    - $\Pr(\mu(x) \leq 0)$ 
+    
+---
+
+### Uniform inference
+
+- @bcchk2018
+- @bccw2018
+
 
 <!-- --- -->
 

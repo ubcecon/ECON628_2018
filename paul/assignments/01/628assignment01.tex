@@ -43,9 +43,9 @@
   Consider the following IV model:
   \begin{align*}
     y_i = \theta d_i + \epsilon_i \\
-    d_i = f(z_i) + u_i
+    d_i = f(x_i) + u_i
   \end{align*}
-  with $\Er[\epsilon|z] = 0$ and $\Er[u|z] = 0$. Let $\hat{f}()$ be an
+  with $\Er[\epsilon|x] = 0$ and $\Er[u|x] = 0$. Let $\hat{f}()$ be an
   estimate of $f$ that satisfies the following high level assumptions:
   \begin{align}
     \En[d_i \hat{f}(x_i)] - \Er[d_i f(x_i)] = & O_p(n^{-1/2} +
