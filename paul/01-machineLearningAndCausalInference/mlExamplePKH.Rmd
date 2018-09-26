@@ -225,7 +225,8 @@ stargazer(iv, type="html",
 
 - Generic machine learning approach of @cddf2018
 
-- Estimate machine learning proxies for $\Er[y|x,d]$
+- Estimate machine learning proxies for $B(x) = \Er[y(0)|x]$ and $S(x)
+  = \Er[y(1) - y(0) |x]$
 
 - Use proxies to :
 
@@ -356,6 +357,28 @@ ggpairs(df, lower=list(continuous="smooth"))  + theme_minimal()
 
 ---
 
+### Best linear projection of CATE
+
+- Randomly partition sample into auxillary and main samples
+
+- Use any method on auxillary sample to estimate 
+$$S(x) = \widehat{\Er[y(1) - y(0) | x]}$$
+and
+$$B(x) = \widehat{\Er[y(0)|x]}$$
+
+- Use main sample to regress with weights $(P(x)(1-P(X)))^{-1}$
+$$ 
+y = \alpha_0 + \alpha_1 B(x) + \beta_0 (d-P(x)) + \beta_1
+(d-P(x))(S(x) - \Er[S(x)]) + \epsilon 
+$$
+
+- $\hat{\beta}_0, \hat{\beta}_1 \to_p \argmin_{b_0,b_1} \Er[(s_0(x) -
+  b_0 - b_1 (S(x)-E[S(x)]))^2]$
+
+- $\Lambda = \beta_1^2 Var(S(x)) = corr(s_0(x),S(X))^2 Var(s_0(x))$ 
+
+---
+
 ```{r, blp-bw, cache=TRUE, dependson=c("lasso","forest","neural"), results='asis'}
 library(kableExtra)
 colfn <- function(gml) {
@@ -364,7 +387,7 @@ colfn <- function(gml) {
 }
 tbl <- cbind(colfn(gml.lasso), colfn(gml.rf), colfn(gml.nn))
 colnames(tbl) <- c("Lasso","Regression forest","Neural network")
-rownames(tbl) <- c("ATE","SE","b1","SE","Lambda")
+rownames(tbl) <- c("ATE=b0","se","b1","se","Lambda")
 
 kable_styling(kable(tbl,
                     caption="Machine learning proxies as BLP of CATE on Birthweight",
@@ -372,6 +395,22 @@ kable_styling(kable(tbl,
               bootstrap_options = c("striped", "hover", "condensed",
                                     "responsive"), full_width=TRUE)
 ```
+---
+
+### Group average treatment effects{-}
+
+- Define $G_k = 1\{\ell_{k-1} \leq S(x) \leq \ell_k\}$ with $\ell_k =
+  k/5$ quantile of $S(x)$
+  
+- Use main sample to regress with weights $(P(x)(1-P(X)))^{-1}$
+$$ 
+y = \alpha_0 + \alpha_1 B(x) + \sum_k \gamma_k (d-P(X)) 1(G_k) +
+\epsilon 
+$$
+
+- $\hat{\gamma}_k \to_p \Er[y(1) - y(0) | G_k]$
+
+- $\bar{\Lambda} = \frac{1}{K} \sum_k \gamma_k^2$ 
 
 ---
 
@@ -388,7 +427,7 @@ colfn <- function(gml) {
 }
 tbl <- cbind(colfn(gml.lasso), colfn(gml.rf), colfn(gml.nn))
 colnames(tbl) <- c("Lasso","Regression forest","Neural network")
-rownames(tbl) <- c(rep(c("GATE","SE"),5),"Lambda")
+rownames(tbl) <- c(as.vector(sapply(1:5, function(x) c(sprintf("GATE %d",x),"se"))),"Lambda")
 
 kable_styling(kable(tbl,
                     caption="GATE on Birthweight",
@@ -449,7 +488,7 @@ colfn <- function(gml) {
 }
 tbl <- cbind(colfn(mw.lasso), colfn(mw.rf), colfn(mw.nn))
 colnames(tbl) <- c("Lasso","Regression forest","Neural network")
-rownames(tbl) <- c("ATE","SE","b1","SE","Lambda")
+rownames(tbl) <- c("ATE=b0","se","b1","se","Lambda")
 
 kable_styling(kable(tbl,
                     caption="Machine learning proxies as BLP of CATE on Midwife Use",
@@ -473,7 +512,7 @@ colfn <- function(gml) {
 }
 tbl <- cbind(colfn(mw.lasso), colfn(mw.rf), colfn(mw.nn))
 colnames(tbl) <- c("Lasso","Regression forest","Neural network")
-rownames(tbl) <- c(rep(c("GATE","SE"),5),"Lambda")
+rownames(tbl) <- c(as.vector(sapply(1:5, function(x) c(sprintf("GATE %d",x),"se"))),"Lambda")
 
 kable_styling(kable(tbl,
                     caption="GATE on Midwife Use",
@@ -482,10 +521,64 @@ kable_styling(kable(tbl,
                                     "responsive"), full_width=TRUE)
 ```
 
+---
+
+### Covariate means by group{-}
+
+```{r, clan, cache=TRUE, dependson=c("lasso-mw","forest-mw","neural-mw")}
+df <- pw[as.numeric(rownames(m$x)),]
+df$edu99 <- df$edu==99
+df$educ <- df$edu
+df$educ[df$educ==99] <- NA
+vars <- c("log_xp_percap","agecat","educ","tv","goat",
+          "hh_toilet_own","motorbike","hh_cook_wood","pkh_ever")
+
+tmp <- data.frame()
+
+groupMeans <- function(var, gml, clusterid) {
+  n.group <- ncol(gml$gate)
+  gate <- matrix(NA, nrow=nrow(gml$gate), ncol=ncol(gml$gate))
+  gate.se <- gate
+  dat <- data.frame(y=var)
+  for (i in 1:ncol(gml$cate)) {
+    S <- gml$cate[,i]
+    cut <- quantile(S, probs=seq(0,1,length.out=(n.group+1)))
+    cut[n.group+1] <- cut[n.group+1] + 1 
+    for(k in 1:n.group) {
+      dat[,sprintf("G.%d",k)] <- 1*(cut[k]<=S & S<cut[k+1])
+    }
+    greg <- lm(as.formula(paste(c("y ~ -1", sprintf("G.%d",1:n.group)), collapse=" + ")),
+                data=dat)
+    gc <- grep("G", names(greg$coefficients))
+    gate[i,] <- greg$coefficients[gc]
+    if (is.null(clusterid)) gate.se[i,] <- sqrt(diag(vcovHC(greg))[gc])
+    else gate.se[i,] <- sqrt(diag(vcovCL(greg,clusterid))[gc])
+  }
+  return(list(mean=apply(gate, 2, function(x) median(x,na.rm=TRUE)),
+              se = apply(gate.se, 2, function(x) median(x,na.rm=TRUE))))
+}
+methods <- c("Lasso","Forest","Neural")
+gmls <- list(mw.lasso,mw.rf,mw.nn)
+for(v in vars) {
+  for (m in 1:length(methods)) {
+    gm <- groupMeans(df[,v], gmls[[m]], lid)    
+    tmp <- rbind(tmp, data.frame(group=1:length(gm$mean),variable=v, method=methods[m],
+                                 mean=gm$mean, se=gm$se))
+  }
+
+}
+library(ggplot2)
+
+fig <- ggplot(data=tmp, aes(x=group, y=mean, colour=method)) +
+  geom_line() +
+  geom_line(aes(y=(mean+1.96*se), colour=method), linetype=2) +
+  geom_line(aes(y=(mean-1.96*se), colour=method), linetype=2) +
+  facet_wrap(~ variable,scales="free_y") + theme_minimal()
+print(fig)
+```
 
 
-
-# Comparing estimation methods
+<!--- # Comparing estimation methods --->
 
 
 # References 

@@ -1,0 +1,73 @@
+\input{../assignmentHeader.tex''}
+
+\title{Economics 628 : Assignment 3}
+\author{Paul Schrimpf}
+\date{Due: October 3rd, 2018}
+
+\begin{document}
+\maketitle
+
+Complete one of the following problems. These questions are
+intentionally somewhat open-ended, and one could spend a very long
+time working on them. If after 5 hours or so, you are not nearing a
+complete solution, it is okay to simply describe how far you have
+gotten and what difficulties you encountered. 
+
+\begin{problem}$\;$
+  Using data from a randomized experiment, conduct a similar exercise
+  as in the slides on the PKH experiment.
+  \begin{itemize}
+  \item Reproduce the main results.
+  \item Estimate group average treatment effects and best linear
+    predictions of the conditional average treatment effect using
+    machine learning proxies.
+  \item If notable treatment heterogeneity is found, investigate the
+    means of covariates conditional on groups.
+  \item Discuss your findings.
+  \end{itemize}
+  Data from many randomized experiments can be
+  found on journal websites. If you do not want to search for one
+  (which admittedly is time-consuming), the Lalonde data on the NSW
+  training program is available at
+  \url{http://users.nber.org/~rdehejia/data/nswdata2.html}. 
+\end{problem}
+
+\begin{problem}
+  For a semiparametric model (that we have not discussed in class
+  and is not used as an example in \cite{chernozhukov2018}) derive a double
+  debiased machine learning estimator. If you can't come up with an
+  appropriate model, \cite{chen2007} begins with a few examples, or
+  feel free to ask for suggestions.
+  \begin{itemize}
+  \item Describe the model and its original moment conditions.
+  \item Derive an orthogonal moment condition.
+  \item Either:
+    \begin{itemize}
+    \item State primitive conditions on your model, data, and estimator
+      for nuisance parameters such that the conditions of theorem 3.1 of
+      \cite{chernozhukov2018}. See sections 4 and 5 of
+      \cite{chernozhukov2018} for examples of what I mean. As remarks
+      4.1 and 5.1 say, the rate conditions stated in the paper are
+      ``non-primative.'' Replace them with primitive conditions. For
+      example, a more precise version of ``The true function being
+      estimated is approximately sparse with sparsity index satisfying
+      some rate condition. We estimate with Lasso with penalty chosen in
+      some specific way.'' OR
+    \item Simulate the model and estimation method. Compare either the
+      performance of different machine learning methods for estimating
+      the nuisance parameters (like I did in the notes for the
+      partially linear model) and/or estimation based on the
+      orthogonal or non-orthogonal moment condition.
+    \end{itemize}
+  \end{itemize}
+\end{problem}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\bibliographystyle{jpe}
+\bibliography{/home/paul/ECON628_2018/paul/01-machineLearningAndCausalInference/ml.bib}
+
+\end{document}
