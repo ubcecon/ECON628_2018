@@ -6,12 +6,16 @@ Get a GitHub ID and use [GitHub](https://github.com/econtoolkit/tutorials/blob/m
 # Using with  Syzygy
 1.  Login to https://vse.syzygy.ca/
 2. Open a Terminal in the launcher, or go to "New Launcher" and create a Terminal
-3. In the terminal, type 
+3. In the terminal, type  (or use `<shift-insert>` to paste)
 ```bash
 git clone https://github.com/ubcecon/ECON628_2018.git
 ```
 4. You can now open notebooks in the `ECON_628/notebooks` folder
-5. To update, go `git pull` in the terminal in the `ECON_628` folder.  To update and overwrite local changes...
+5. To update, go `git pull` in the terminal in the `ECON_628` folder
+6. To update and overwrite local changes,
+```bash
+git fetch origin; git reset --hard HEAD
+```
 
 ## Syllabus
 See [Syllabus](syllabus.md) for more details
