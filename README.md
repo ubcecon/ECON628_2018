@@ -16,3 +16,10 @@ See https://github.com/econtoolkit/tutorials/blob/master/syzygy.md for more deta
 
 ## Syllabus
 See [Syllabus](syllabus.md) for more details
+
+## Lectures
+1. **October 1st**: Intro to Jupyter and Julia
+   - [Julia By Example](noteooks/julia_by_example.ipynb)
+2. **October 3rd**: Continuing on introduction, with Fixed Point Algorithms 
+   - Finish [Julia By Example](noteooks/julia_by_example.ipynb), start Finish [Julia Essentials](noteooks/julia_essentials.ipynb)
+3. **October 8th**: Thanksgiving holiday
