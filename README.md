@@ -21,5 +21,6 @@ See [Syllabus](syllabus.md) for more details
 1. **October 1st**: Intro to Jupyter and Julia
    - [Julia By Example](noteooks/julia_by_example.ipynb)
 2. **October 3rd**: Continuing on introduction, with Fixed Point Algorithms 
-   - Finish [Julia By Example](noteooks/julia_by_example.ipynb), start Finish [Julia Essentials](noteooks/julia_essentials.ipynb)
+   - Finish [Julia By Example](noteooks/julia_by_example.ipynb), start [Julia Essentials](noteooks/julia_essentials.ipynb)
 3. **October 8th**: Thanksgiving holiday
+4. **October 10th**: Finish [Julia Essentials](noteooks/julia_essentials.ipynb), start [Fundamental Types](noteooks/fundamental_types.ipynb)
