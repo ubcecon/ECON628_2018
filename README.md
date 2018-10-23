@@ -18,12 +18,11 @@ See https://github.com/econtoolkit/tutorials/blob/master/syzygy.md for more deta
 See [Syllabus](syllabus.md) for more details
 
 ## Lectures
-1. **October 1st**: Intro to Jupyter and Julia
-   - [Julia By Example](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/julia_by_example.ipynb)
-2. **October 3rd**: Continuing on introduction, with Fixed Point Algorithms 
-   - Finish [Julia By Example](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/julia_by_example.ipynb), start [Julia Essentials](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/julia_essentials.ipynb)
+1. **October 1st**:[Julia By Example](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/julia_by_example.ipynb)
+2. **October 3rd**: [Julia By Example](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/julia_by_example.ipynb), start [Julia Essentials](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/julia_essentials.ipynb)
 3. **October 8th**: Thanksgiving holiday
 4. **October 10th**: Finish [Julia Essentials](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/julia_essentials.ipynb)
 5. **October 15th**: [Fundamental Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/fundamental_types.ipynb)
 6. **October 17th**: Finished [Fundamental Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/fundamental_types.ipynb) and reviewing solutions for PS4
-7. **October 22nd**: Introduction to Types
+7. **October 22nd**: [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb)
+8. **October 24th**: Finish [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb), start Generic Programming
