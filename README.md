@@ -27,8 +27,8 @@ See [Syllabus](syllabus.md) for more details
 7. **October 22nd**: [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb)
 8. **October 24th**: Finish [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb) and [Generic Programming](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/generic_programming.ipynb)
 9. **October 29th**: Github and Version Control
-10. **October 31st**: Quadrature, Interpolation, and Orthogonal Polynomials
-11. **November 5th**: Unit Testing, Continous Integration, and Reproducibility
-12. **November 7th**: DataFrames, Optimizers, Sparsity, and Auto-Differentiation
+10. **October 31st**: Dynamic Programming and Markov Chains
+11. **November 5th**: DataFrames, Fixed Effects, Optimizers, Sparsity, and Auto-Differentiation
+12. **November 7th**: Projects, Unit Testing, Continous Integration, and Reproducibility
 13. **November 12th**: Statutory holiday 
-14. **November 14th**: TBD
+14. **November 14th**: Webscraping and Text
