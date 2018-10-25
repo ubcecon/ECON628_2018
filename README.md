@@ -25,4 +25,10 @@ See [Syllabus](syllabus.md) for more details
 5. **October 15th**: [Fundamental Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/fundamental_types.ipynb)
 6. **October 17th**: Finished [Fundamental Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/fundamental_types.ipynb) and reviewing solutions for PS4
 7. **October 22nd**: [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb)
-8. **October 24th**: Finish [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb), start Generic Programming
+8. **October 24th**: Finish [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb), Generic Programming
+9. **October 29th**: Github and Version Control
+10. **October 31st**:
+11. **November 5th**:
+12. **November 7th**:
+13: **November 12th**: Statutory holiday 
+14: **November 14th**: 
