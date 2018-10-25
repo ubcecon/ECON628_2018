@@ -27,8 +27,8 @@ See [Syllabus](syllabus.md) for more details
 7. **October 22nd**: [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb)
 8. **October 24th**: Finish [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb), Generic Programming
 9. **October 29th**: Github and Version Control
-10. **October 31st**:
-11. **November 5th**:
-12. **November 7th**:
+10. **October 31st**: TBD
+11. **November 5th**: TBD
+12. **November 7th**: TBD
 13: **November 12th**: Statutory holiday 
-14: **November 14th**: 
+14: **November 14th**: TBD
