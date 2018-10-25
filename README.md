@@ -25,10 +25,10 @@ See [Syllabus](syllabus.md) for more details
 5. **October 15th**: [Fundamental Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/fundamental_types.ipynb)
 6. **October 17th**: Finished [Fundamental Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/fundamental_types.ipynb) and reviewing solutions for PS4
 7. **October 22nd**: [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb)
-8. **October 24th**: Finish [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb), Generic Programming(https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/generic_programming.ipynb)
+8. **October 24th**: Finish [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb) and [Generic Programming](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/generic_programming.ipynb)
 9. **October 29th**: Github and Version Control
-10. **October 31st**: TBD
-11. **November 5th**: TBD
-12. **November 7th**: TBD
+10. **October 31st**: Quadrature, Interpolation, and Orthogonal Polynomials
+11. **November 5th**: Unit Testing, Continous Integration, and Reproducibility
+12. **November 7th**: DataFrames, Optimizers, Sparsity, and Auto-Differentiation
 13. **November 12th**: Statutory holiday 
 14. **November 14th**: TBD
