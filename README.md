@@ -26,7 +26,7 @@ See [Syllabus](syllabus.md) for more details
 6. **October 17th**: Finished [Fundamental Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/fundamental_types.ipynb) and reviewing solutions for PS4
 7. **October 22nd**: [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb)
 8. **October 24th**: Finish [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb) and [Generic Programming](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/generic_programming.ipynb)
-9. **October 29th**: Github and Version Control
+9. **October 29th**: Github and Version Control, see [Local Installation](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/getting_started.ipynb)
 10. **October 31st**: Dynamic Programming and Markov Chains
 11. **November 5th**: DataFrames, Fixed Effects, Optimizers, Sparsity, and Auto-Differentiation
 12. **November 7th**: Projects, Unit Testing, Continous Integration, and Reproducibility
