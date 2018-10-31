@@ -27,7 +27,7 @@ See [Syllabus](syllabus.md) for more details
 7. **October 22nd**: [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb)
 8. **October 24th**: Finish [Introduction to Types](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/introduction_to_types.ipynb) and [Generic Programming](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/generic_programming.ipynb)
 9. **October 29th**: Github and Version Control, see [Local Installation](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/getting_started.ipynb)
-10. **October 31st**: Dynamic Programming and Markov Chains
+10. **October 31st**: Dynamic Programming and Markov Chains: [Finite Markov Chains](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/finite_markov.ipynb),  [McCall Search I](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/mccall_model.ipynb),  [McCall Search I](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/mccall_model_with_separation.ipynb)
 11. **November 5th**: DataFrames, Fixed Effects, Optimizers, Sparsity, and Auto-Differentiation
 12. **November 7th**: Projects, Unit Testing, Continous Integration, and Reproducibility
 13. **November 12th**: Statutory holiday 
