@@ -84,11 +84,11 @@ adding interactions with * and &.
 5. Subsetting data with logicals when missings occur. I find that I
 often want to subset data by a logical expression, e.g.
 ```julia
-data[:x][data[:y].>0] = newvalue # error is any data[:y] is missing
+data[:x][data[:y].>0] = newvalue # error if any data[:y] is missing
 ```
 My approach has been
 ```julia
 missing_to_false = x -> ifelse(ismissing(x), false, x)
-data[:x][missing_to_false.(data[:y].>0)] = newvalue # error is any data[:y] is missing
+data[:x][missing_to_false.(data[:y].>0)] = newvalue 
 ```
 This is fine, but somehow feels clunky. 
