@@ -128,7 +128,12 @@ often want to subset data by a logical expression, e.g.
 ```julia
 data[:x][data[:y].>0] = newvalue # error if any data[:y] is missing
 ```
-> JP: I will ask on slack and get back to you.
+> JP: They say
+```
+df.x = ifelse.(ismissing.(df.x) .& df.y .> 0, val, df.x)
+# and maybe with @.
+@. df.x = ifelse(ismissing(df.x) & df.y > 0, val, df.x)
+```
 My approach has been
 ```julia
 missing_to_false = x -> ifelse(ismissing(x), false, x)
