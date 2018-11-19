@@ -1,7 +1,7 @@
 # Final Project
 ## Dates
 * Final project **proposal due** on **November 28th**
-  * The writeup for this can be very short (e.g. 1/2 page or whatever), just so we can all agree on whether it is acceptable.  It will not be graded.  If we think that the proposal is inappropriate, or want some clarifications, we will tell you that week
+  * The writeup for this can be very short (e.g. 1/2 page or whatever), just so we can all agree on whether it is acceptable or not.  It will not be graded.  If we think that the proposal is inappropriate, or want some clarifications, we will tell you that week
 * The final project is **due December 19th**
 
 ## Requirements
