@@ -414,47 +414,73 @@ $$
 $$
     
 ```julia
-function simulate_ivshare(n,β,π,ρ)
-  z = randn(n, size(π)[1])
+function simulate_ivshare(n,β,γ,ρ)
+  z = randn(n, size(γ)[1])
   endo = randn(n, length(β))
-  x = z*π .+ endo 
+  x = z*γ .+ endo .- 0.1
   e = rand(Normal(0,sqrt((1-ρ^2))),n).+endo[:,1]*ρ
   y = cdf.(Logistic(), x*β .+ e)
   return((y=y,x=x,z=z))  
 end
 n = 500
 k = 2
-iv = 4
+iv = 2
 β0 = ones(k)
-π0 = ones(iv,k)
-ρ = 0.5
+π0 = ones(iv,k).*0.5
+ρ = 0.1
 (y,x,z) = simulate_ivshare(n,β0,π0,ρ)
 
 function gi_ivshare(β,y,x,z)
   e = quantile.(Logistic(),y) .- x*β
-  e.*z
+  hcat(e, e.*z)
 end
+mean(hcat(e, e.*z),dims=1)
 
 function gmmObj(θ,gi,W)
   g = gi(θ)
   m = mean(g,dims=1)
   (size(g)[1]*( m*W*m')[1]) # return scalar, not 1x1 array
 end
+function gmmVar(θ,gi,W)
+  g = gi(θ)
+  n = size(g)[1]
+  D = ForwardDiff.jacobian(θ->mean(gi(θ),dims=1),θ)
+  Σ = cov(gi(θ))
+  1/n*inv(D'*W*D)*(D'*Σ*D)*inv(D'*W*D)
+end
+
 function ar(θ,gi)
   gmmObj(θ,gi,inv(cov(gi(θ))))
 end
 
-optres = optimize(θ->gmmObj(θ,β->gi_ivshare(β,y,x,z),I),
-                  zeros(k), NewtonTrustRegion(), autodiff =:forward)
-@show β1 = optres.minimizer 
-optres = optimize(θ->gmmObj(θ,β->gi_ivshare(β,y,x,z),inv(cov(gi_ivshare(β1,y,x,z)))),
-                  zeros(k), NewtonTrustRegion(), autodiff =:forward)
-@show βeff = optres.minimizer 
-optres = optimize(θ->ar(θ,β->gi_ivshare(β,y,x,z)),
-                  zeros(k), NewtonTrustRegion(), autodiff =:forward)
-@show βcue = optres.minimizer 
+
+opt1 = optimize(θ->gmmObj(θ,β->gi_ivshare(β,y,x,z),I),
+                β0, BFGS(), autodiff =:forward)
+@show β1 = opt1.minimizer
+display(gmmVar(β1, β->gi_ivshare(β,y,x,z),I))
+opteff = optimize(θ->gmmObj(θ,β->gi_ivshare(β,y,x,z),inv(cov(gi_ivshare(β1,y,x,z)))),
+                  zeros(k), BFGS(), autodiff =:forward)
+@show βeff = opteff.minimizer
+display(gmmVar(βeff,β->gi_ivshare(β,y,x,z),inv(cov(gi_ivshare(β1,y,x,z)))))
+
+ar_ivshare = θ->ar(θ,β->gi_ivshare(β,y,x,z))
+optcue = optimize(ar_ivshare,
+                  zeros(k), BFGS(), autodiff =:forward)
+@show βcue = optcue.minimizer
+Vcue = gmmVar(βcue,β->gi_ivshare(β,y,x,z),inv(cov(gi_ivshare(βcue,y,x,z))))
+display(Vcue)
 
 
+using Sobol, Plots
+lb = βcue - sqrt.(diag(Vcue))*4
+ub = βcue + sqrt.(diag(Vcue))*4
+ntest = 1000
+rng = SobolSeq(2)
+βtest = [next!(rng).*(ub-lb) .+ lb for i in 1:ntest]
+arstat = ar_ivshare.(βtest)
+βtest = vcat(βtest'...)
+crit = quantile(Chisq(2), 0.9)
+scatter(βtest[:,1],βtest[:,2], group=(arstat.<crit))
 ```
 
 TO BE CONTINUED
