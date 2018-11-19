@@ -30,5 +30,6 @@ See [Syllabus](syllabus.md) for more details
 10. **October 31st**: [Finite Markov Chains](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/finite_markov.ipynb),  [McCall Search I](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/mccall_model.ipynb), and [McCall Search II](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/mccall_model_with_separation.ipynb)
 11. **November 5th**: [General Packages](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/general_packages.ipynb), [DataFrames, Fixed Effects, Statistics](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/data_statistical_packages.ipynb), and [Optimizers, Solvers, and Auto-Differentiation](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/optimization_solver_packages.ipynb)
 12. **November 7th**: [Tools and Editors](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/tools_editors.ipynb), [Unit Testing, Continuous Integration, and Reproducibility](https://nbviewer.jupyter.org/github/ubcecon/ECON628_2018/blob/master/notebooks/testing.ipynb)
-13. **November 12th**: Statutory holiday 
+13. **November 12th**: Statutory holiday
 14. **November 14th**: Webscraping and Text
+# this is a test
