@@ -532,7 +532,6 @@ inverting the AR statistic.
 
 ```julia
 using Sobol, Plots
-Plots.pyplot()
 function plot_cr(β,V, AR)
   lb = β - sqrt.(diag(V))*5
   ub = β + sqrt.(diag(V))*5
@@ -589,16 +588,36 @@ S = 500
 n = 100
 function sim_p(π0)
   (y,x,z) = simulate_ivshare(n,β0,π0,ρ)
+  opt1 = optimize(θ->gmmObj(θ, β->gi_ivshare(β,y,x,z) ,I),
+                  β0, BFGS(), autodiff =:forward)
+  if (!opt1.g_converged)
+    opt1 = optimize(θ->gmmObj(θ, β->gi_ivshare(β,y,x,z) ,I),
+                    β0, NewtonTrustRegion(), autodiff =:forward)
+  end
+  β1 = opt1.minimizer
+
+  V1 = gmmVar(β1,β->gi_ivshare(β,y,x,z),I)
+  
   optcue = optimize(θ->ar(θ,β->gi_ivshare(β,y,x,z)),
                     β0, BFGS(), autodiff =:forward)
-  βcue = optcue.minimizer
+  if (!optcue.g_converged)
+    optcue = optimize(θ->ar(θ,β->gi_ivshare(β,y,x,z)),
+                      β0, NewtonTrustRegion(), autodiff =:forward)
+  end
+  if (!optcue.g_converged)
+    display(optcue)
+    βcue = deepcopy(β1)
+  else 
+    βcue = optcue.minimizer
+  end
   Vcue =
     gmmVar(βcue,β->gi_ivshare(β,y,x,z),inv(cov(gi_ivshare(βcue,y,x,z))))
   arp = θ->(1.0-cdf(Chisq(size(z)[2]),ar(θ,β->gi_ivshare(β,y,x,z))))
   waldp = θ->(1.0-cdf(Chisq(length(βcue)),(θ-βcue)'*inv(Vcue)*(θ-βcue)))
-  [arp(β0) waldp(β0)]
+  waldp1 = θ->(1.0-cdf(Chisq(length(β1)),(θ-β1)'*inv(V1)*(θ-β1)))
+  [arp(β0) waldp(β0) waldp1(β0)]
 end
-πweak = deepcopy(π0)
+πweak = ones(iv,k) .+ vcat(diagm(0=>fill(0.1,k)),zeros(iv-k,k))  
 πstrong = vcat(diagm(0=>ones(k)),ones(iv-k,k)) 
 @time pweak=vcat([sim_p(πweak) for s in 1:S]...)
 @time pstrong=vcat([sim_p(πstrong) for s in 1:S]...)
@@ -609,11 +628,17 @@ plot(pgrid, p->mean( pstrong[:,1] .<= p), legend=:topleft,
      xlabel="p", ylabel="P(p value < p)",
      title="Simulated CDF of p-values") 
 plot!(pgrid, p->mean( pstrong[:,2] .<= p),
-      label="Wald, strong ID", style=:dash, color=:blue)
+      label="Wald CUE, strong ID", style=:dash, color=:blue)
+plot!(pgrid, p->mean( pstrong[:,3] .<= p),
+      label="Wald I, strong ID", style=:dash, color=:green)
+
 plot!(pgrid, p->mean( pweak[:,1] .<= p),
       label="AR, weak ID", style=:solid, color=:red)
 plot!(pgrid, p->mean( pweak[:,2] .<= p),
-      label="Wald, weak ID", style=:solid, color=:blue)
+      label="Wald CUE, weak ID", style=:solid, color=:blue)
+plot!(pgrid, p->mean( pweak[:,3] .<= p),
+      label="Wald I, weak ID", style=:solid, color=:green)
+
 plot!(pgrid,pgrid,alpha=0.1, label="")
 
 ```
@@ -638,6 +663,177 @@ CLR and KLM statistics under strong identification have $\chi^2_k$
 distributions (as does the Wald statistic), where $k$ is the number of
 parameters. Consequently, when the model is overidentified, the CLR
 and LM tests are more powerful than the AR test. 
+
+
+Here is an implementation of the KLM and CLR statistics. The names of
+variables roughly follows the notation of @andrews2017.
+```julia
+using ForwardDiff, Plots, Optim
+
+function klm(θ,gi)
+  function P(A::AbstractMatrix) # projection matrix
+    A*pinv(A'*A)*A'
+  end
+  giθ=gi(θ)
+  (n, k) = size(giθ)
+  p = length(θ)
+  Ω = cov(giθ)  
+  gn=θ->mean(gi(θ), dims=1)
+  gnθ = gn(θ)
+  G = ForwardDiff.jacobian(gn,θ)
+  Gi= ForwardDiff.jacobian(gi,θ)
+  Gi = reshape(Gi, n , k, p)
+  Γ = zeros(eltype(G),p,k,k)
+  D = zeros(eltype(G),k, p)
+  for j in 1:p
+    for i in 1:n
+      Γ[j,:,:] .+= (Gi[i,:,j] .- G[:,j])' * giθ[i,:]
+    end
+    Γ[j,:,:] ./= n
+    D[:,j] = G[:,j] - Γ[j,:,:]*inv(Ω)*gnθ'
+  end
+  lm = n*(gnθ*Ω^(-1/2)*P(Ω^(-1/2)*D)*Ω^(-1/2)*gnθ')[1]
+end
+
+function clr(θ,gi)
+  giθ=gi(θ)
+  (n, k) = size(giθ)
+  p = length(θ)
+  function rk(θ,gi)
+    # see section 6 of Andrews & Guggenberger (2017)
+    Ω = cov(giθ)  
+    gn=θ->mean(gi(θ), dims=1)
+    gnθ = gn(θ)
+    G = ForwardDiff.jacobian(gn,θ)
+    Gi= ForwardDiff.jacobian(gi,θ)
+    Gi = reshape(Gi, n , k, p)
+    Γ = zeros(eltype(G),p,k,k)
+    D = zeros(eltype(G),k, p)
+    for j in 1:p
+      for i in 1:n
+        Γ[j,:,:] .+= (Gi[i,:,j] .- G[:,j])' * giθ[i,:]
+      end
+      Γ[j,:,:] ./= n
+      D[:,j] = G[:,j] - Γ[j,:,:]*inv(Ω)*gnθ'
+    end
+    rk = eigmin(n*D'*inv(Ω)*D)
+  end
+  rk = rk(θ,gi)
+  AR  = ar(θ,gi)
+  lm = klm(θ,gi)
+  clr = 1/2*(AR - rk + sqrt( (AR-rk)^2 + 4*lm*rk))
+  # simulate to find p-value
+  S = 5000
+  function randc(r)
+    χp = rand(Chisq(p))
+    χkp = rand(Chisq(k-p))
+    0.5*(χp + χkp - r + sqrt((χp^2 + χkp^2 -r)^2 + 4χp^2*r))
+  end
+  csim = [randc(rk) for s in 1:S]
+  pval = mean(csim.<=clr)
+end
+
+function plot_cr(β,V, tests::AbstractArray{Function}, labels; ngrid=30)
+  lb = β - sqrt.(diag(V))*5
+  ub = β + sqrt.(diag(V))*5
+  fig=scatter([β0[1]], [β0[2]], markersize=8, legend=false,
+              xlabel="β1", ylabel="β2")
+  ntest = 1000
+  βtest = [rand(2).*(ub-lb) .+ lb for i in 1:ntest]
+  pval = tests[1].(βtest)
+  βtest = vcat(βtest'...)
+  crit = 0.9
+  fig=scatter!(βtest[:,1],βtest[:,2], group=(pval.<crit), legend=false,
+               markersize=4, markerstrokewidth=0.0, seriesalpha=0.5,
+               palette=:heat)
+  b1 = lb[1]:(ub[1]-lb[1])/ngrid:ub[1]
+  b2 = lb[2]:(ub[2]-lb[2])/ngrid:ub[2]
+  colors = [:black, :red, :blue, :green]
+  for t in 1:length(tests)
+    fig=contour!(b1,b2,(a,b)->tests[t]([a,b]),
+             levels = [0.9, 0.95],
+             contour_labels=true, legend=false,
+             label = labels[t],
+             c=cgrad([colors[t],colors[t]],[0.0,1.0]))
+  end
+  fig
+end
+```
+
+```julia
+# go back to well identified dgp
+k = 2
+iv =3 
+π0 = ones(iv,k) .+ vcat(diagm(0=>fill(2.0,k)),zeros(iv-k,k))  
+ρ = 0.5  
+(y,x,z) = simulate_ivshare(n,β0,π0,ρ)
+opt1 = optimize(θ->gmmObj(θ, β->gi_ivshare(β,y,x,z) ,I),
+                β0, BFGS(), autodiff =:forward)
+β1 = opt1.minimizer
+V1 = gmmVar(β1,β->gi_ivshare(β,y,x,z),I)
+  
+
+pklm = θ->cdf(Chisq(length(βcue)),klm(θ, β->gi_ivshare(β,y,x,z)))
+par  = θ->cdf(Chisq(size(z)[2]), ar(θ, β->gi_ivshare(β,y,x,z)))
+pclr  = θ->clr(θ, β->gi_ivshare(β,y,x,z))
+pwald = θ -> cdf(Chisq(length(β1)),(θ-β1)'*inv(V1)*(θ-β1))
+
+plot_cr(β1,V1, [pclr, pklm, par, pwald],
+        ["CLR","KLM","AR","Wald"], ngrid=50)
+
+```
+
+Check the size
+```julia
+S = 200
+n = 100
+function sim_p(π0)
+  (y,x,z) = simulate_ivshare(n,β0,π0,ρ)
+  opt1 = optimize(θ->gmmObj(θ, β->gi_ivshare(β,y,x,z) ,I),
+                  β0, BFGS(), autodiff =:forward)
+  if (!opt1.g_converged)
+    opt1 = optimize(θ->gmmObj(θ, β->gi_ivshare(β,y,x,z) ,I),
+                    β0, NewtonTrustRegion(), autodiff =:forward)
+  end
+  β1 = opt1.minimizer
+  V1 = gmmVar(β1,β->gi_ivshare(β,y,x,z),I)
+  
+  pklm = θ->cdf(Chisq(length(β1)),klm(θ, β->gi_ivshare(β,y,x,z)))
+  par  = θ->cdf(Chisq(size(z)[2]), ar(θ, β->gi_ivshare(β,y,x,z)))
+  pclr  = θ->clr(θ, β->gi_ivshare(β,y,x,z))
+  pwald = θ -> cdf(Chisq(length(β1)),(θ-β1)'*inv(V1)*(θ-β1))  
+  [par(β0) pwald(β0) pclr(β0) pklm(β0)]
+end
+πweak = ones(iv,k) .+ vcat(diagm(0=>fill(0.1,k)),zeros(iv-k,k))  
+πstrong = vcat(diagm(0=>ones(k)),ones(iv-k,k)) 
+pweak=vcat([sim_p(πweak ) for s in 1:S]...)
+pstrong=vcat([sim_p(πstrong) for s in 1:S]...)
+
+pgrid = 0:0.01:1
+plot(pgrid, p->mean( pstrong[:,1] .<= p), legend=:topleft,
+     label="AR, strong ID", style=:dash, color=:blue,
+     xlabel="p", ylabel="P(p value < p)",
+     title="Simulated CDF of p-values") 
+plot!(pgrid, p->mean( pstrong[:,2] .<= p),
+      label="Wald I, strong ID", style=:dash, color=:green)
+plot!(pgrid, p->mean( pstrong[:,3] .<= p),
+      label="CLR, strong ID", style=:dash, color=:black)
+plot!(pgrid, p->mean( pstrong[:,4] .<= p),
+      label="KLM, strong ID", style=:dash, color=:red)
+
+plot!(pgrid, p->mean( pweak[:,1] .<= p),
+      label="AR, weak ID", style=:solid, color=:blue)
+plot!(pgrid, p->mean( pweak[:,2] .<= p),
+      label="Wald I, weak ID", style=:solid, color=:green)
+plot!(pgrid, p->mean( pweak[:,3] .<= p),
+      label="CLR, weak ID", style=:solid, color=:black)
+plot!(pgrid, p->mean( pweak[:,4] .<= p),
+      label="KLM, weak ID", style=:solid, color=:red)
+plot!(pgrid,pgrid,alpha=0.1, label="")
+
+```
+
+
 
 <!--- Add details and example code for KLM & CLR tests--->
 

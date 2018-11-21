@@ -76,9 +76,8 @@ S = 1000
 T = [estimator(dgp(n)) for s in 1:S] .- 0.25
 function bootstrap(data, estimator, S)
   n = length(data)
-  dist = Categorical(fill(1.0/n,n))
   θhat = estimator(data)
-  T = [estimator(data[[rand(dist) for i in 1:n]]) for s in 1:S] .- θhat 
+  T = [estimator(sample(data,n, replace=true)) for s in 1:S] .- θhat 
 end
 Tboot = bootstrap(dgp(n),estimator, S)
 density(T, label="true distribution")
@@ -196,8 +195,7 @@ B = 999
 function simulatetests(n)
   function bootstrap(data, stat, S)
     n = length(data)
-    dist = Categorical(fill(1.0/n,n))
-    T = [stat(data[[rand(dist) for i in 1:n]]) for s in 1:S] 
+    T = [stat(sample(data,n)) for s in 1:S] 
   end
   data = dgp(n)
   t = sqrt(n)*(mean(data)-θ0)/std(data)
@@ -256,9 +254,8 @@ function bootmeansquared(μ0, n)
   T = [estimator(dgp(n)) for s in 1:S] .- μ0^2
   function bootstrap(data, estimator, S)
     n = length(data)
-    dist = Categorical(fill(1.0/n,n))
     θhat = estimator(data)
-    [estimator(data[[rand(dist) for i in 1:n]]) for s in 1:S] .- θhat 
+    [estimator(sample(data,n,replace=true)) for s in 1:S] .- θhat 
   end
   Tboot = bootstrap(dgp(n),estimator, S)
   density(T, label="true distribution")
