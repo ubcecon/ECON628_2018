@@ -18,7 +18,7 @@ Commons Attribution-ShareAlike 4.0 International License</a>.
 
 This document was created using Weave.jl. The code is available in
 [the course github
-repository](https://github.com/ubcecon/ECON628_2018). The same
+repository](https://github.com/ubcecon/ECON628_2018/paul). The same
 document generates both static webpages and associated jupyter
 notebooks.
 
@@ -146,7 +146,9 @@ consistency and asymptotic normality.
 
 1. $\hat{Q}_n(\theta)$ converges uniformly in probability to
    $Q_0(\theta)$
+
 2. $Q_0(\theta)$ is uniquely maximized at $\theta_0$.
+
 3. $\Theta$ is compact and $Q_0(\theta)$ is continuous.
 
 Then $\hat{\theta} \inprob \theta_0$
@@ -157,13 +159,17 @@ Then $\hat{\theta} \inprob \theta_0$
 
 <div class="theorem">
 **Asymptotic normality for extremum estimators**: assume
+
 1. $\hat{\theta} \inprob \theta_0$
+
 2. $\theta_0 \in interior(\Theta)$
+
 3. $\hat{Q}_n(\theta)$ is twice continuously differentiable in open $N$
    containing $\theta$, and $\sup_{\theta \in N} \Vert \nabla^2
                              \hat{Q}_n(\theta) - H(\theta) \Vert
                              \inprob 0$ with $H(\theta_0)$ nonsingular
 4. $\sqrt{n} \nabla \hat{Q}_n(\theta_0) \indist N(0,\Sigma)$
+
 Then $\sqrt{n} (\hat{\theta} - \theta_0) \indist N\left(0,H^{-1} \Sigma
   H^{-1} \right)$
 </div>
@@ -200,9 +206,9 @@ end
 
 avar=asymptotic_variance(θ->logit_likelihood(θ,y,x),
                          θ->ForwardDiff.jacobian(β->logit_likei(β,y,x),θ),βhat)
-@show avar.variance/n
-@show -avar.invH/n
-@show inv(avar.Σ)/n
+display( avar.variance/n)
+display( -avar.invH/n)
+display(inv(avar.Σ)/n)
 ```
 For maximum likelihood, the information equality says $-H = \Sigma$,
 so the three expressions above have the same probability limit, and
@@ -217,8 +223,8 @@ using GLM, DataFrames
 df = DataFrame(x)
 df[:y] = y
 glmest=glm(@formula(y ~ -1 + x1+x2+x3), df, Binomial(),LogitLink())
-@show glmest
-@show vcov(glmest)
+display( glmest)
+display( vcov(glmest))
 ```
 
 ## Delta method
@@ -264,10 +270,11 @@ vmfx = delta_method(β->logit_mfx(β,xmfx)[:,1], βhat, avar.variance/n)
 sdfx = sqrt.(diag(vmfx))
 
 using Plots
-Plots.gr()
+Plots.pyplot()
 plot(xmfx[:,1],mfx[:,1],ribbon=quantile(Normal(),0.95)*sdfx,fillalpha=0.5,
      xlabel="x[1]", ylabel="dP(y=1|x)/dx[1]", legend=false,
-     title="Marginal effect of x[1] when x[2:k]=0")
+         title="Marginal effect of x[1] when x[2:k]=0")
+
 ```
 
 The same approach can be used to compute standard errors and
@@ -362,10 +369,14 @@ it is not difficult to transform other extremum estimators into GMM.
 For a GMM objective function of the form:
 $$ [1/n \sum_i g_i(\theta)] W_n [1/n \sum g_i(\theta]$$, 
 if we assume:
+
 1. $1/\sqrt{n} \sum_i g_i(\theta_0) \indist N(0,\Sigma)$
+
 2. $1/n \sum_i \nabla g_i(\theta) \inprob E[\nabla g(\theta)]$, 
    $W_n \inprob W$
+
 3. $(D'WD)$ is nonsingular.
+
 then the above theorem for asymptotic normality of extremum
 estimators implies that 
 $$
@@ -385,8 +396,11 @@ simplifies to $(D' \Sigma D)^{-1}$.
 As already stated, the assumption that $(D'WD)$ is nonsingular is
 problematic if we want to allow for identification problems. However,
 if we assume only that 
+
 1. $1/\sqrt{n} \sum_i g_i(\theta_0) \indist N(0,\Sigma)$
+
 2. $W_n \inprob \Sigma^{-1}$
+
 then 
 $$
 n [1/n \sum g_i(\theta_0)]' W_n^{-1} [1/n \sum g_i(\theta_0)]
@@ -398,7 +412,7 @@ any explicit nonsingular assumption about a Hessian. Hence, there is
 hope that this result would be true even with identification
 problems. Indeed, it is. @stock2000 first proposed using this test
 statistic for weakly identified GMM estimators. @stock2002 gives an
-overview of this test and related tests with a focus on linear IV. 
+overview of this test and related tests with a focus on linear IV. @caner2009
 
 Typical usage of the AR test is to invert the test to construct a
 confidence region for $\theta$. For each $\theta \in \Theta$, 
@@ -412,35 +426,77 @@ confidence region for $\theta_0$ is
 $$
 \{ \theta \in \Theta: AR(\theta) \leq c_\alpha \}
 $$
-    
+
+### Example: IV logit demand
+
+A common way to model demand for differentiated products is to
+aggregate an individual discrete choice. We will look at the simplest
+such model here. This is a model for when we have data on product
+market shares, $y_j$, and product attributes, $x_j$, for many
+different markets. In concrete applications, markets may be defined
+geographically, temporally, by consumer segment, or some combination
+thereof. 
+
+Consider a single good, which consumers chooose to
+purchase or not. Consumer $i$'s utility from consuming the good is
+$$
+u_{ij} = x_j \beta + \xi_j + \epsilon_{ij}
+$$
+where $x_j$ are the observed attributes of the good in market $j$,
+$\xi_j$ is a market level demand shock, and $\epsilon_{ij}$ is an
+individual taste shock. Person $i$ purchases the good if 
+$u_{ij} \geq 0$. Aggregating individual purchases implies that the
+market share in market $j$ is 
+$$ y_j = F_{-\epsilon}(x_j \beta + \xi_j) $$
+where $F_{-\epsilon}$ is the CDF of $-\epsilon$.
+
+We assume that $\epsilon_{ij}$ is independent of $x_j$ and
+$\xi_j$. Typically, $x_j$ includes some easily adjusted product
+attributes, such as price, so we want to allow $x_j$ to be correlated
+with $\xi_j$. Assume that we have some instruments $z_j$ such that
+$\Er[\xi_j z_j]=0.$  We can write this moment condition in terms of
+observables and $\beta$ as
+$$ \Er[ (F^{-1}_{-\epsilon}(y_j) - x_j\beta) z_j ] = 0 $$
+This is the moment condition we will use to estimate $\beta$.
+
+First, we will simulate the model, then estimate it. This code looks
+at three variants of GMM. First, it computes an estimate with 
+$W_n = I$. Second, it computes an effeciently weighted estimated with 
+$W_n = \widehat{Var}( \nabla g_i(\hat{\theta}_{(1)}) )$, where
+$\hat{\theta}_{(1)}$ is the first estimate. Third, it computes the
+continuous updating estimator, which uses $AR(\theta)$ as the
+objective function ($W$ is "continuously updated" to be 
+$\widehat{Var}( \nabla g_i(\theta))$). 
+
 ```julia
+using Optim, ForwardDiff, LinearAlgebra, Distributions
 function simulate_ivshare(n,β,γ,ρ)
   z = randn(n, size(γ)[1])
   endo = randn(n, length(β))
-  x = z*γ .+ endo .- 0.1
-  e = rand(Normal(0,sqrt((1-ρ^2))),n).+endo[:,1]*ρ
-  y = cdf.(Logistic(), x*β .+ e)
+  x = z*γ .+ endo
+  ξ = rand(Normal(0,sqrt((1.0-ρ^2))),n).+endo[:,1]*ρ 
+  y = cdf.(Logistic(), x*β .+ ξ)
   return((y=y,x=x,z=z))  
 end
-n = 500
+n = 100
 k = 2
-iv = 2
+iv = 3
 β0 = ones(k)
-π0 = ones(iv,k).*0.5
-ρ = 0.1
+π0 = vcat(diagm(0=>ones(k)),ones(iv-k,k)) 
+ρ = 0.5  
 (y,x,z) = simulate_ivshare(n,β0,π0,ρ)
 
 function gi_ivshare(β,y,x,z)
-  e = quantile.(Logistic(),y) .- x*β
-  hcat(e, e.*z)
+  ξ = quantile.(Logistic(),y) .- x*β
+  ξ.*z
 end
-mean(hcat(e, e.*z),dims=1)
 
 function gmmObj(θ,gi,W)
   g = gi(θ)
   m = mean(g,dims=1)
   (size(g)[1]*( m*W*m')[1]) # return scalar, not 1x1 array
 end
+
 function gmmVar(θ,gi,W)
   g = gi(θ)
   n = size(g)[1]
@@ -454,8 +510,8 @@ function ar(θ,gi)
 end
 
 
-opt1 = optimize(θ->gmmObj(θ,β->gi_ivshare(β,y,x,z),I),
-                β0, BFGS(), autodiff =:forward)
+opt1 = optimize(θ->gmmObj(θ, β->gi_ivshare(β,y,x,z) ,I),
+                zeros(k), BFGS(), autodiff =:forward)
 @show β1 = opt1.minimizer
 display(gmmVar(β1, β->gi_ivshare(β,y,x,z),I))
 opteff = optimize(θ->gmmObj(θ,β->gi_ivshare(β,y,x,z),inv(cov(gi_ivshare(β1,y,x,z)))),
@@ -465,22 +521,137 @@ display(gmmVar(βeff,β->gi_ivshare(β,y,x,z),inv(cov(gi_ivshare(β1,y,x,z)))))
 
 ar_ivshare = θ->ar(θ,β->gi_ivshare(β,y,x,z))
 optcue = optimize(ar_ivshare,
-                  zeros(k), BFGS(), autodiff =:forward)
+                  β0, BFGS(), autodiff =:forward)
 @show βcue = optcue.minimizer
 Vcue = gmmVar(βcue,β->gi_ivshare(β,y,x,z),inv(cov(gi_ivshare(βcue,y,x,z))))
 display(Vcue)
-
-
-using Sobol, Plots
-lb = βcue - sqrt.(diag(Vcue))*4
-ub = βcue + sqrt.(diag(Vcue))*4
-ntest = 1000
-rng = SobolSeq(2)
-βtest = [next!(rng).*(ub-lb) .+ lb for i in 1:ntest]
-arstat = ar_ivshare.(βtest)
-βtest = vcat(βtest'...)
-crit = quantile(Chisq(2), 0.9)
-scatter(βtest[:,1],βtest[:,2], group=(arstat.<crit))
 ```
 
-TO BE CONTINUED
+Now we compare confidence regions based on the Wald test, and from
+inverting the AR statistic.
+
+```julia
+using Sobol, Plots
+Plots.pyplot()
+function plot_cr(β,V, AR)
+  lb = β - sqrt.(diag(V))*5
+  ub = β + sqrt.(diag(V))*5
+  ntest = 1000
+  rng = SobolSeq(2)
+  βtest = [next!(rng).*(ub-lb) .+ lb for i in 1:ntest]
+  arstat = AR.(βtest)
+  βtest = vcat(βtest'...)
+  crit = quantile(Chisq(size(z)[2]), 0.9)
+  scatter(βtest[:,1],βtest[:,2], group=(arstat.<crit), legend=false,
+          markersize=4, markerstrokewidth=0.0, seriesalpha=0.8,
+          xlabel="\\beta_1", ylabel="\\beta_2")
+  scatter!([β0[1]], [β0[2]], markersize=8)
+  b1 = lb[1]:(ub[1]-lb[1])/100:ub[1]
+  b2 = lb[2]:(ub[2]-lb[2])/100:ub[2]
+  arf = (a,b) -> cdf(Chisq(size(z)[2]),AR([a,b]))
+  contour!(b1,b2,arf, levels = [0.75,0.9, 0.95, 0.99],
+           contour_labels=true, legend=false, c=cgrad([:black,:black],[0.0,1.0]))
+  waldf = (a,b) -> cdf(Chisq(length(βcue)),([a,b]-βcue)'*inv(Vcue)*([a,b]-βcue))
+  contour!(b1,b2,waldf, levels = [0.9, 0.95, 0.99],
+           contour_labels=true,
+           label="Wald CI", c=cgrad([:red,:red], [0.0,1.0]),
+           legend=false)
+end
+plot_cr(βcue,Vcue, ar_ivshare)
+
+```
+
+The two confidence regions above are not too different because the
+simulated data was strongly identified. Let's see what happens when we
+change the simulation to have weaker identification.
+
+```julia
+# make π0 nearly rank-deficient
+π0 = ones(iv,k) .+ vcat(diagm(0=>fill(0.1,k)),zeros(iv-k,k))  
+ρ = 0.5  
+(y,x,z) = simulate_ivshare(n,β0,π0,ρ)
+ar_ivshare = θ->ar(θ,β->gi_ivshare(β,y,x,z))
+optcue = optimize(ar_ivshare,
+                  β0, BFGS(), autodiff =:forward)
+@show βcue = optcue.minimizer
+Vcue = gmmVar(βcue,β->gi_ivshare(β,y,x,z),inv(cov(gi_ivshare(βcue,y,x,z))))
+display(Vcue)
+plot_cr(βcue,Vcue, ar_ivshare)
+
+```
+
+Now the confidence regions are dramatically different. Does either one
+have correct coverage? Let's simulate to find the size of the AR and
+Wald tests of $H_0 : \beta = \beta_0$
+
+```julia
+S = 500
+n = 100
+function sim_p(π0)
+  (y,x,z) = simulate_ivshare(n,β0,π0,ρ)
+  optcue = optimize(θ->ar(θ,β->gi_ivshare(β,y,x,z)),
+                    β0, BFGS(), autodiff =:forward)
+  βcue = optcue.minimizer
+  Vcue =
+    gmmVar(βcue,β->gi_ivshare(β,y,x,z),inv(cov(gi_ivshare(βcue,y,x,z))))
+  arp = θ->(1.0-cdf(Chisq(size(z)[2]),ar(θ,β->gi_ivshare(β,y,x,z))))
+  waldp = θ->(1.0-cdf(Chisq(length(βcue)),(θ-βcue)'*inv(Vcue)*(θ-βcue)))
+  [arp(β0) waldp(β0)]
+end
+πweak = deepcopy(π0)
+πstrong = vcat(diagm(0=>ones(k)),ones(iv-k,k)) 
+@time pweak=vcat([sim_p(πweak) for s in 1:S]...)
+@time pstrong=vcat([sim_p(πstrong) for s in 1:S]...)
+
+pgrid = 0:0.01:1
+plot(pgrid, p->mean( pstrong[:,1] .<= p), legend=:topleft,
+     label="AR, strong ID", style=:dash, color=:red,
+     xlabel="p", ylabel="P(p value < p)",
+     title="Simulated CDF of p-values") 
+plot!(pgrid, p->mean( pstrong[:,2] .<= p),
+      label="Wald, strong ID", style=:dash, color=:blue)
+plot!(pgrid, p->mean( pweak[:,1] .<= p),
+      label="AR, weak ID", style=:solid, color=:red)
+plot!(pgrid, p->mean( pweak[:,2] .<= p),
+      label="Wald, weak ID", style=:solid, color=:blue)
+plot!(pgrid,pgrid,alpha=0.1, label="")
+
+```
+
+We see that the Wald test has fairly large size distortions, even when
+identification is strong. The AR test has approximately correct size
+for both the weakly and strongly identified DGP. 
+
+### Other identification robust tests
+
+There are also identification robust versions of likelihood ratio and
+lagrange multiplier test. @moreira2003 proposed a conditional
+likelihood ratio (CLR) test for weakly identified linear IV
+models. @kleibergen2005 developed a Lagrange multiplier (often called
+the KLM) test and extended Moreira's CLR test to weakly identified GMM
+models.  More recently, @andrews2015 and @andrews2017 showed the
+validity of these tests under more general conditions. These tests are
+somewhat more complicated than the AR test, but they have the
+advantage that they are often more powerful. The AR test statistic has
+a $\chi^2_{m}$ distribution, where $m$ is the number of moments. The
+CLR and KLM statistics under strong identification have $\chi^2_k$
+distributions (as does the Wald statistic), where $k$ is the number of
+parameters. Consequently, when the model is overidentified, the CLR
+and LM tests are more powerful than the AR test. 
+
+<!--- Add details and example code for KLM & CLR tests--->
+
+## Bootstrap
+
+The bootstrap and related simulation methods can also be used for
+inference. We will look at these in more detail in the next set of notes.
+
+## Bayesian methods
+
+Bayesian methods give an alternative approach to both estimation and
+inference. In some situations, Bayesian methods can be more convenient
+and/or more numerically robust. In well behaved settings, when viewed
+from a frequentist perspective, Bayesian methods asymptotically give
+the same results as MLE (or efficiently weighted GMM in the case of
+quasi-Bayesian models). 
+    
