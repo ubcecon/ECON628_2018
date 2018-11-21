@@ -67,6 +67,7 @@ As a quick example, here's some code where the statistic is the sample
 median minus its true value.
 ```julia
 using StatPlots, Distributions
+Plots.pyplot()
 dgp(n) = rand(n).^2
 estimator(x) = median(x)
 # simulating T ~ G_n(τ,F_0)
@@ -80,7 +81,6 @@ function bootstrap(data, estimator, S)
   T = [estimator(data[[rand(dist) for i in 1:n]]) for s in 1:S] .- θhat 
 end
 Tboot = bootstrap(dgp(n),estimator, S)
-Plots.pyplot()
 density(T, label="true distribution")
 density!(Tboot, label="bootstrap distribution")
 
@@ -226,4 +226,72 @@ something like $n^{-1/2}$ vs $n^{-1/3}$, so it we really do need to
 have the right simulation design and method of visualizing the results
 to see the difference.
 
+## Bootstrap does not always work
 
+It is important to remember that the bootstrap is not guaranteed to
+work. A classic example is estimating the mean squared. 
+Let $x_i \sim F_0$, where$F_0$ is any distribution with mean
+$\mu$ and variance $\sigma^2$. The parameter of interest is $\theta = \mu^2$. The estimator
+will be $\hat{\theta} = \bar{x}^2$.  The delta method and CLT imply 
+$$
+    \sqrt{n}(\bar{x}^2 - \mu^2) \indist 2\mu N(0,\sigma^2)
+$$
+similarly conditional on the data,
+$$
+    \sqrt{n}(\bar{x^*}^2 - \bar{x}^2) \indist 2 \mu N(0,\sigma^2)$
+$$
+A problem occurs when $\mu=0$. The limiting distributions become point
+masses at 0. The CDF is no longer continuous, so the theorem above
+does not apply. 
+
+Here's an illustration [*Note: I intentionally left a bug in this
+code, can you spot it?*]:
+```julia
+using StatPlots, Distributions
+Plots.pyplot()
+function bootmeansquared(μ0, n)
+  dgp(n) = rand(n) .- 0.5 .+ μ0
+  estimator(x) = mean(x)^2  
+  S = 1000
+  T = [estimator(dgp(n)) for s in 1:S] .- μ0^2
+  function bootstrap(data, estimator, S)
+    n = length(data)
+    dist = Categorical(fill(1.0/n,n))
+    θhat = estimator(data)
+    [estimator(data[[rand(dist) for i in 1:n]]) for s in 1:S] .- θhat 
+  end
+  Tboot = bootstrap(dgp(n),estimator, S)
+  density(T, label="true distribution")
+  density!(Tboot, label="bootstrap distribution")
+end
+bootmeansquared(0.5,100)
+```
+
+```julia
+bootmeansquared(0.0,1000)
+```
+
+<!-- A procedure related to bootstrap that can work under conditions where -->
+<!-- bootstrap fails is subsampling. -->
+<!-- ```julia -->
+<!-- using StatPlots, StatsBase -->
+<!-- Plots.pyplot() -->
+<!-- function subsamplemeansquared(μ0, n) -->
+<!--   function subsample(data, estimator, m, S) -->
+<!--     θhat = estimator(data) -->
+<!--     sqrt(m)*([estimator(sample(data, m, replace=false)) for s in 1:S] .- θhat) -->
+<!--   end -->
+<!--   dgp(n) = rand(n) .- 0.5 .+ μ0 -->
+<!--   estimator(x) = mean(x)^2   -->
+<!--   S = 1000 -->
+<!--   T = ([estimator(dgp(n)) for s in 1:S] .- μ0^2)*sqrt(n) -->
+<!--   Tboot = subsample(dgp(n),estimator, Int64(round(n^(2/3))),S) -->
+<!--   density(T, label="true distribution") -->
+<!--   density!(Tboot, label="subsample distribution") -->
+<!-- end -->
+<!-- subsamplemeansquared(0.5,1000) -->
+<!-- ``` -->
+
+<!-- ```julia -->
+<!-- subsamplemeansquared(0.0,1000) -->
+```
