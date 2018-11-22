@@ -218,7 +218,7 @@ The code above is for demonstration and learning. If we really wanted
 to estimate a logit for research, it would be better to use a
 well-tested package. Here's how to estimate  a logit using GLM.jl. 
 
-```julia; 
+```julia;  cache=true
 using GLM, DataFrames
 df = DataFrame(x)
 df[:y] = y
@@ -286,7 +286,7 @@ parameters. For example, the following code uses simulation to
 calculate the change in the probability of $y$ from adding 0.1 to
 $x$.
 
-```julia
+```julia; cache=true
 function counterfactual_sim(β, x, S)
   function onesim()
     e = rand(Logistic(), size(x)[1])
@@ -311,7 +311,7 @@ inference. For example, a 90% confidence interval for $g(\theta)$
 would be the 5%-tile of $g(\theta_s)$ to the 95%-tile of
 $g(\theta_s)$. 
 
-```julia
+```julia; cache=true
 Ω = avar.variance/n
 Ω = (Ω+Ω')/2         # otherwise, it's not exactly symmetric due to
                      # floating point roundoff
@@ -508,8 +508,9 @@ end
 function ar(θ,gi)
   gmmObj(θ,gi,inv(cov(gi(θ))))
 end
+```
 
-
+```julia; cache=true
 opt1 = optimize(θ->gmmObj(θ, β->gi_ivshare(β,y,x,z) ,I),
                 zeros(k), BFGS(), autodiff =:forward)
 @show β1 = opt1.minimizer
@@ -667,7 +668,7 @@ and LM tests are more powerful than the AR test.
 
 Here is an implementation of the KLM and CLR statistics. The names of
 variables roughly follows the notation of @andrews2017.
-```julia
+```julia; cache=true
 using ForwardDiff, Plots, Optim
 
 function klm(θ,gi)
@@ -732,7 +733,9 @@ function clr(θ,gi)
   csim = [randc(rk) for s in 1:S]
   pval = mean(csim.<=clr)
 end
+```
 
+```julia; cache=false
 function plot_cr(β,V, tests::AbstractArray{Function}, labels; ngrid=30)
   lb = β - sqrt.(diag(V))*5
   ub = β + sqrt.(diag(V))*5
@@ -760,7 +763,7 @@ function plot_cr(β,V, tests::AbstractArray{Function}, labels; ngrid=30)
 end
 ```
 
-```julia
+```julia; cache=false
 # go back to well identified dgp
 k = 2
 iv =3 
@@ -778,14 +781,64 @@ par  = θ->cdf(Chisq(size(z)[2]), ar(θ, β->gi_ivshare(β,y,x,z)))
 pclr  = θ->clr(θ, β->gi_ivshare(β,y,x,z))
 pwald = θ -> cdf(Chisq(length(β1)),(θ-β1)'*inv(V1)*(θ-β1))
 
-plot_cr(β1,V1, [pclr, pklm, par, pwald],
-        ["CLR","KLM","AR","Wald"], ngrid=50)
+@show n
 
+plot_cr(β1,V1, [pclr, pklm, par, pwald],
+        ["CLR","KLM","AR","Wald"], ngrid=40)
 ```
 
+```julia; cache=false
+n = 200
+k = 2
+iv =3 
+π0 = ones(iv,k) .+ vcat(diagm(0=>fill(2.0,k)),zeros(iv-k,k))  
+ρ = 0.5  
+(y,x,z) = simulate_ivshare(n,β0,π0,ρ)
+opt1 = optimize(θ->gmmObj(θ, β->gi_ivshare(β,y,x,z) ,I),
+                β0, BFGS(), autodiff =:forward)
+β1 = opt1.minimizer
+V1 = gmmVar(β1,β->gi_ivshare(β,y,x,z),I)
+  
+
+pklm = θ->cdf(Chisq(length(βcue)),klm(θ, β->gi_ivshare(β,y,x,z)))
+par  = θ->cdf(Chisq(size(z)[2]), ar(θ, β->gi_ivshare(β,y,x,z)))
+pclr  = θ->clr(θ, β->gi_ivshare(β,y,x,z))
+pwald = θ -> cdf(Chisq(length(β1)),(θ-β1)'*inv(V1)*(θ-β1))
+
+@show n
+
+plot_cr(β1,V1, [pclr, pklm, par, pwald],
+        ["CLR","KLM","AR","Wald"], ngrid=40)
+```
+
+```julia; cache=false
+n = 400
+k = 2
+iv =3 
+π0 = ones(iv,k) .+ vcat(diagm(0=>fill(2.0,k)),zeros(iv-k,k))  
+ρ = 0.5  
+(y,x,z) = simulate_ivshare(n,β0,π0,ρ)
+opt1 = optimize(θ->gmmObj(θ, β->gi_ivshare(β,y,x,z) ,I),
+                β0, BFGS(), autodiff =:forward)
+β1 = opt1.minimizer
+V1 = gmmVar(β1,β->gi_ivshare(β,y,x,z),I)
+  
+
+pklm = θ->cdf(Chisq(length(βcue)),klm(θ, β->gi_ivshare(β,y,x,z)))
+par  = θ->cdf(Chisq(size(z)[2]), ar(θ, β->gi_ivshare(β,y,x,z)))
+pclr  = θ->clr(θ, β->gi_ivshare(β,y,x,z))
+pwald = θ -> cdf(Chisq(length(β1)),(θ-β1)'*inv(V1)*(θ-β1))
+
+@show n
+
+plot_cr(β1,V1, [pclr, pklm, par, pwald],
+        ["CLR","KLM","AR","Wald"], ngrid=40)
+```
+
+
 Check the size
-```julia
-S = 200
+```julia; cache=false
+S = 300
 n = 100
 function sim_p(π0)
   (y,x,z) = simulate_ivshare(n,β0,π0,ρ)
