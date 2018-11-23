@@ -671,67 +671,56 @@ variables roughly follows the notation of @andrews2017.
 ```julia; cache=true
 using ForwardDiff, Plots, Optim
 
-function klm(θ,gi)
+function statparts(θ,gi)
+  # compute common components of klm, rk, & clr stats
+  # follows notation of Andrews & Guggenberger 2017, section 3.1
   function P(A::AbstractMatrix) # projection matrix
     A*pinv(A'*A)*A'
   end
-  giθ=gi(θ)
+  giθ = gi(θ)
+  p = length(θ)    
   (n, k) = size(giθ)
-  p = length(θ)
   Ω = cov(giθ)  
-  gn=θ->mean(gi(θ), dims=1)
-  gnθ = gn(θ)
-  G = ForwardDiff.jacobian(gn,θ)
+  gn=mean(gi(θ), dims=1)'
+  #G = ForwardDiff.jacobian(θ->mean(gi(θ),dims=1),θ)
   Gi= ForwardDiff.jacobian(gi,θ)
   Gi = reshape(Gi, n , k, p)
+  G = mean(Gi, dims=1)
   Γ = zeros(eltype(G),p,k,k)
   D = zeros(eltype(G),k, p)
   for j in 1:p
     for i in 1:n
-      Γ[j,:,:] .+= (Gi[i,:,j] .- G[:,j])' * giθ[i,:]
+      Γ[j,:,:] += (Gi[i,:,j] .- G[1,:,j]) * giθ[i,:]'
     end
     Γ[j,:,:] ./= n
-    D[:,j] = G[:,j] - Γ[j,:,:]*inv(Ω)*gnθ'
+    D[:,j] = G[1,:,j] - Γ[j,:,:]*inv(Ω)*gn
   end
-  lm = n*(gnθ*Ω^(-1/2)*P(Ω^(-1/2)*D)*Ω^(-1/2)*gnθ')[1]
+  return(n,k,p,gn, Ω, D, P)
+end
+
+function klm(θ,gi)
+  (n,k,p,gn, Ω, D, P) = statparts(θ,gi)
+  lm = n*(gn'*Ω^(-1/2)*P(Ω^(-1/2)*D)*Ω^(-1/2)*gn)[1]
 end
 
 function clr(θ,gi)
-  giθ=gi(θ)
-  (n, k) = size(giθ)
-  p = length(θ)
-  function rk(θ,gi)
-    # see section 6 of Andrews & Guggenberger (2017)
-    Ω = cov(giθ)  
-    gn=θ->mean(gi(θ), dims=1)
-    gnθ = gn(θ)
-    G = ForwardDiff.jacobian(gn,θ)
-    Gi= ForwardDiff.jacobian(gi,θ)
-    Gi = reshape(Gi, n , k, p)
-    Γ = zeros(eltype(G),p,k,k)
-    D = zeros(eltype(G),k, p)
-    for j in 1:p
-      for i in 1:n
-        Γ[j,:,:] .+= (Gi[i,:,j] .- G[:,j])' * giθ[i,:]
-      end
-      Γ[j,:,:] ./= n
-      D[:,j] = G[:,j] - Γ[j,:,:]*inv(Ω)*gnθ'
-    end
-    rk = eigmin(n*D'*inv(Ω)*D)
-  end
-  rk = rk(θ,gi)
-  AR  = ar(θ,gi)
-  lm = klm(θ,gi)
-  clr = 1/2*(AR - rk + sqrt( (AR-rk)^2 + 4*lm*rk))
+  (n,k,p,gn, Ω, D, P) = statparts(θ,gi)
+  
+  rk = eigmin(n*D'*inv(Ω)*D)
+  AR  = (n*gn'*inv(Ω)*gn)[1]
+  lm = (n*(gn'*Ω^(-1/2)*P(Ω^(-1/2)*D)*Ω^(-1/2)*gn))[1]  
+  lr = 1/2*(AR - rk + sqrt( (AR-rk)^2 + 4*lm*rk))
+  
   # simulate to find p-value
   S = 5000
-  function randc(r)
-    χp = rand(Chisq(p))
-    χkp = rand(Chisq(k-p))
-    0.5*(χp + χkp - r + sqrt((χp^2 + χkp^2 -r)^2 + 4χp^2*r))
+  function randc(k,p,r,S)
+    χp = rand(Chisq(p),S)
+    χkp = rand(Chisq(k-p),S)
+    0.5.*(χp .+ χkp .- r .+
+          sqrt.((χp .+ χkp .- r).^2 .+ 4 .* χp.*r))
   end
-  csim = [randc(rk) for s in 1:S]
-  pval = mean(csim.<=clr)
+  csim = randc(k,p,rk,S)
+  pval = mean(csim.<=lr)
 end
 ```
 
@@ -763,11 +752,14 @@ function plot_cr(β,V, tests::AbstractArray{Function}, labels; ngrid=30)
 end
 ```
 
+Here's what the confidence regions look like when identification is
+fairly weak. The green lines are the Wald confidence region, blue is
+AR, red is KLM, and black is CLR. 
 ```julia; cache=false
-# go back to well identified dgp
+n = 50
 k = 2
 iv =3 
-π0 = ones(iv,k) .+ vcat(diagm(0=>fill(2.0,k)),zeros(iv-k,k))  
+π0 = vcat(diagm(0=>ones(k)),0.2*ones(iv-k,k)) 
 ρ = 0.5  
 (y,x,z) = simulate_ivshare(n,β0,π0,ρ)
 opt1 = optimize(θ->gmmObj(θ, β->gi_ivshare(β,y,x,z) ,I),
@@ -780,18 +772,17 @@ pklm = θ->cdf(Chisq(length(βcue)),klm(θ, β->gi_ivshare(β,y,x,z)))
 par  = θ->cdf(Chisq(size(z)[2]), ar(θ, β->gi_ivshare(β,y,x,z)))
 pclr  = θ->clr(θ, β->gi_ivshare(β,y,x,z))
 pwald = θ -> cdf(Chisq(length(β1)),(θ-β1)'*inv(V1)*(θ-β1))
-
-@show n
-
 plot_cr(β1,V1, [pclr, pklm, par, pwald],
         ["CLR","KLM","AR","Wald"], ngrid=40)
 ```
 
+Here's what the confidence regions look like when identification is
+stronger.
 ```julia; cache=false
-n = 200
+n = 50
 k = 2
 iv =3 
-π0 = ones(iv,k) .+ vcat(diagm(0=>fill(2.0,k)),zeros(iv-k,k))  
+π0 = vcat(diagm(0=>ones(k)),ones(iv-k,k)) 
 ρ = 0.5  
 (y,x,z) = simulate_ivshare(n,β0,π0,ρ)
 opt1 = optimize(θ->gmmObj(θ, β->gi_ivshare(β,y,x,z) ,I),
@@ -804,36 +795,10 @@ pklm = θ->cdf(Chisq(length(βcue)),klm(θ, β->gi_ivshare(β,y,x,z)))
 par  = θ->cdf(Chisq(size(z)[2]), ar(θ, β->gi_ivshare(β,y,x,z)))
 pclr  = θ->clr(θ, β->gi_ivshare(β,y,x,z))
 pwald = θ -> cdf(Chisq(length(β1)),(θ-β1)'*inv(V1)*(θ-β1))
-
-@show n
-
 plot_cr(β1,V1, [pclr, pklm, par, pwald],
         ["CLR","KLM","AR","Wald"], ngrid=40)
 ```
 
-```julia; cache=false
-n = 400
-k = 2
-iv =3 
-π0 = ones(iv,k) .+ vcat(diagm(0=>fill(2.0,k)),zeros(iv-k,k))  
-ρ = 0.5  
-(y,x,z) = simulate_ivshare(n,β0,π0,ρ)
-opt1 = optimize(θ->gmmObj(θ, β->gi_ivshare(β,y,x,z) ,I),
-                β0, BFGS(), autodiff =:forward)
-β1 = opt1.minimizer
-V1 = gmmVar(β1,β->gi_ivshare(β,y,x,z),I)
-  
-
-pklm = θ->cdf(Chisq(length(βcue)),klm(θ, β->gi_ivshare(β,y,x,z)))
-par  = θ->cdf(Chisq(size(z)[2]), ar(θ, β->gi_ivshare(β,y,x,z)))
-pclr  = θ->clr(θ, β->gi_ivshare(β,y,x,z))
-pwald = θ -> cdf(Chisq(length(β1)),(θ-β1)'*inv(V1)*(θ-β1))
-
-@show n
-
-plot_cr(β1,V1, [pclr, pklm, par, pwald],
-        ["CLR","KLM","AR","Wald"], ngrid=40)
-```
 
 
 Check the size
