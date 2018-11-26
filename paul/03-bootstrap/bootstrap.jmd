@@ -192,33 +192,33 @@ Here is a simulation to illustrate.
 using Distributions, Plots
 dgp(n) = rand(Exponential(),n)
 estimator(x) = mean(x)
-θ0 = 0.5
-N = 5:5:20
+θ0 = 1.0
+N = [5 10 20 100]
 B = 999
 function simulatetests(n)
   function bootstrap(data, stat, S)
     n = length(data)
-    T = [stat(sample(data,n)) for s in 1:S] 
+    T = [stat(sample(data,n)) for s in 1:S]
   end
   data = dgp(n)
   t = sqrt(n)*(mean(data)-θ0)/std(data)
-  [cdf(Normal(),t),   
+  [cdf(Normal(),t),
    mean(t.<bootstrap(data, d->(sqrt(n)*(mean(d) - mean(data))/std(d)), B)),
    mean((mean(data)-θ0) .< bootstrap(data, d->(mean(d)-mean(data)), B))]
 end
 res=[hcat([simulatetests.(n) for s in 1:1000]...) for n in N]
 
 p = 0:0.01:1
-i = 1
-plot(p, p->(mean(res[i][1,:].<p)-p), title="N=$(N[i])",  label="asymptotic")
-plot!(p, p->(mean(res[i][2,:].<p)-p), title="N=$(N[i])", label="pivotal bootstrap")
-plot!(p, p->(mean(res[i][3,:].<p)-p), title="N=$(N[i])", label="non-pivotal boostrap")
-
-i = 4
-plot(p, p->(mean(res[i][1,:].<p)-p), title="N=$(N[i])",  label="asymptotic")
-plot!(p, p->(mean(res[i][2,:].<p)-p), title="N=$(N[i])", label="pivotal bootstrap")
-plot!(p, p->(mean(res[i][3,:].<p)-p), title="N=$(N[i])", label="non-pivotal boostrap")
-
+global fig = plot(layout=4, legend=:none)
+for i=1:4
+  plot!(fig,p, p->(mean(res[i][1,:].<p)-p), title="N=$(N[i])",
+       label="asymptotic", subplot=i)
+  plot!(fig,p, p->(mean(res[i][2,:].<p)-p), title="N=$(N[i])",
+        label="pivotal bootstrap", subplot=i)
+  plot!(fig,p, p->(mean(res[i][3,:].<p)-p), title="N=$(N[i])",
+        label="non-pivotal boostrap", subplot=i)
+end
+display(fig)
 ```
 
 This figure shows the simulated CDF of p-values minus p. For a
@@ -268,8 +268,12 @@ bootmeansquared(0.5,100)
 ```
 
 ```julia; cache=true
-bootmeansquared(0.0,1000)
+bootmeansquared(0.0,500)
 ```
+Depending on the random numbers drawn (in particular, whether the simulated
+sample mean is very close to 0 or not), the above picture may look
+okay or terrible for the bootstrap. Try running it a few times to get
+a sense of how bad it might be.
 
 # Bootstrap for GMM
 
@@ -489,8 +493,11 @@ end
 
 pvals = vcat([simulatetests() for s in 1:50]...)
 p = 0:0.01:1.0
-plot(p, p->(mean(pvals[:,1].<p)-p),  label="minimization bootstrap", legend=:best)
-plot!(p, p->(mean(pvals[:,2].<p)-p),  label="score bootstrap")
+fig=plot(p, p->(mean(pvals[:,1].<p)-p),
+         label="minimization bootstrap", legend=:best)
+plot!(fig,p, p->(mean(pvals[:,2].<p)-p),  label="score bootstrap")
+display(fig)
+
 ```
 
 Both versions of the bootstrap appear to work well enough here. Note

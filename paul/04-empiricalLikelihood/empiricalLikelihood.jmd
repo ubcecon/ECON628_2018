@@ -112,7 +112,7 @@ function simulate_ivshare(n,β,γ,ρ)
   y = cdf.(Logistic(), x*β .+ ξ)
   return((y=y,x=x,z=z))
 end
-n = 500
+n = 1000
 k = 2
 iv = 3
 β0 = ones(k)
@@ -143,13 +143,11 @@ m = gel_jump(y,x,z)
 solve(m)
 @show getvalue(getindex(m,:θ) )
 @show getvalue(getindex(m,:p) )
-@show getdual(getindex(m,:θ)  )
-@show getdual(getindex(m,:p))
-@show getdual(getindex(m,:prob))
 
 using BenchmarkTools
 m.solver=IpoptSolver(print_level=0)
 @btime (()->(setvalue(getindex(m,:θ),zeros(length(β0)));
+             setvalue(getindex(m,:p),fill(1/n,n));
              solve(m)))()
 m.solver=IpoptSolver(print_level=5)
 ```
