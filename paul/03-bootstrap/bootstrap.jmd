@@ -65,9 +65,9 @@ $G_n(\tau,\hat{F}_n)$.
 
 As a quick example, here's some code where the statistic is the sample
 median minus its true value.
-```julia
+```julia; cache=true
 using StatPlots, Distributions
-Plots.pyplot()
+Plots.gr()
 dgp(n) = rand(n).^2
 estimator(x) = median(x)
 # simulating T ~ G_n(τ,F_0)
@@ -90,15 +90,17 @@ density!(Tboot, label="bootstrap distribution")
 @mackinnon2006 and @mackinnon2009 are good practical introductions to
 the bootstrap. @horowitz2001 is also a good overview, and includes
 more precise statements of theoretical results, but does not contain
-proofs. @gine1997 is a rigorous and fairly self-contained
-theoretical treatment of the bootstrap. Although the bootstrap works
-in many situations, it does not always work. For example, @abadie2008
-show the failure of the bootstrap for matching estimators. See
-@andrews2000, @andrews2009, and @romano2012 for theoretical
-developments on situations where the bootstrap fails.  @hall1994 gives
-a theoretical overview of when the bootstrap provides asymptotic
-refinement. @chernozhukov2017 discusses the bootstrap in high
-dimensional models.
+proofs. The lecture notes of @shi2012 are another very good overview.
+@gine1997 is a rigorous and fairly self-contained theoretical
+treatment of the bootstrap.
+
+Although the bootstrap works in many situations, it does not always
+work. For example, @abadie2008 show the failure of the bootstrap for
+matching estimators. See @andrews2000, @andrews2009, and @romano2012
+for theoretical developments on situations where the bootstrap fails.
+@hall1994 gives a theoretical overview of when the bootstrap provides
+asymptotic refinement. @chernozhukov2017 discusses the bootstrap in
+high dimensional models.
 
 # Theory
 
@@ -152,7 +154,7 @@ replacement from the empirical distribution. We will let
 $\mathbb{P}_n$ denote the empirical distribution, and $x_i^*$ denote
 draws of $x_i$ from it.
 
-<div class="theorem>
+<div class="theorem">
 *Let $x_1, x_2, ...$ be i.i.d. with mean $\mu$ and variance
 $\sigma^2$. Then conditional on $x_1, ...$ for almost every sequence
 $$
@@ -186,8 +188,9 @@ non-pivotal statistics. See @hall1994 for details.
 
 Here is a simulation to illustrate. 
 
-```julia 
-dgp(n) = rand(n)
+```julia; cache=true
+using Distributions, Plots
+dgp(n) = rand(Exponential(),n)
 estimator(x) = mean(x)
 θ0 = 0.5
 N = 5:5:20
@@ -218,11 +221,12 @@ plot!(p, p->(mean(res[i][3,:].<p)-p), title="N=$(N[i])", label="non-pivotal boos
 
 ```
 
-In this simulation design it appears impossible to see the difference
-in performance. Theoretically, the difference in convergence rates is
-something like $n^{-1/2}$ vs $n^{-1/3}$, so it we really do need to
-have the right simulation design and method of visualizing the results
-to see the difference.
+This figure shows the simulated CDF of p-values minus p. For a
+perfectly sized test, the line would be identically 0. The blue lines
+are for the usual t-test. Green is from bootstrapping the non-pivotal
+statistic $\sqrt{n}(\bar{x}^* - \bar{x})$. Red is from bootstrapping a
+pivotal t-statistic. As expected, the red line is closer to 0,
+illustrating the advantage of bootstrapping a pivotal statistic. 
 
 ## Bootstrap does not always work
 
@@ -242,11 +246,10 @@ A problem occurs when $\mu=0$. The limiting distributions become point
 masses at 0. The CDF is no longer continuous, so the theorem above
 does not apply. 
 
-Here's an illustration [*Note: I intentionally left a bug in this
-code, can you spot it?*]:
-```julia
+Here's an illustration 
+```julia; cache=true
 using StatPlots, Distributions
-Plots.pyplot()
+Plots.gr()
 function bootmeansquared(μ0, n)
   dgp(n) = rand(n) .- 0.5 .+ μ0
   estimator(x) = mean(x)^2  
@@ -264,31 +267,240 @@ end
 bootmeansquared(0.5,100)
 ```
 
-```julia
+```julia; cache=true
 bootmeansquared(0.0,1000)
 ```
 
-<!-- A procedure related to bootstrap that can work under conditions where -->
-<!-- bootstrap fails is subsampling. -->
-<!-- ```julia -->
-<!-- using StatPlots, StatsBase -->
-<!-- Plots.pyplot() -->
-<!-- function subsamplemeansquared(μ0, n) -->
-<!--   function subsample(data, estimator, m, S) -->
-<!--     θhat = estimator(data) -->
-<!--     sqrt(m)*([estimator(sample(data, m, replace=false)) for s in 1:S] .- θhat) -->
-<!--   end -->
-<!--   dgp(n) = rand(n) .- 0.5 .+ μ0 -->
-<!--   estimator(x) = mean(x)^2   -->
-<!--   S = 1000 -->
-<!--   T = ([estimator(dgp(n)) for s in 1:S] .- μ0^2)*sqrt(n) -->
-<!--   Tboot = subsample(dgp(n),estimator, Int64(round(n^(2/3))),S) -->
-<!--   density(T, label="true distribution") -->
-<!--   density!(Tboot, label="subsample distribution") -->
-<!-- end -->
-<!-- subsamplemeansquared(0.5,1000) -->
-<!-- ``` -->
+# Bootstrap for GMM
 
-<!-- ```julia -->
-<!-- subsamplemeansquared(0.0,1000) -->
+## Joint hypotheses
+
+The failure of the bootstrap for the mean squared when the true mean
+is 0 has important implications for GMM. In particular, the AR
+statistic, 
+$$
+AR(\theta) = n [1/n \sum g_i(\theta)]' \widehat{Var}(g_i(\theta))^{-1}
+[1/n \sum g_i(\theta)] 
+$$
+is essentially a mean squared. If we naively attempt to apply the
+bootstrap by computing
+$$
+AR(\theta)^* = n [1/n \sum g_i^*(\theta)]' \widehat{Var}(g_i^*(\theta))^{-1}
+[1/n \sum g_i^*(\theta)] 
+$$
+we will get incorrect inference. The problem is that we want to test
+$H_0: \Er[g_i(\theta)] = 0$, but in the bootstrap sample, 
+$$
+\Er[g^*(\theta)|data] = 1/n \sum g_i(\theta) \neq 0.
+$$
+For the bootstrap to work, we must ensure that the null hypothesis is
+true in the bootstrap sample, we can do this by taking
+$$
+AR(\theta)^* = n [1/n \sum g_i^*(\theta) - \bar{g}_n(\theta)]' \widehat{Var}(g_i^*(\theta))^{-1}
+[1/n \sum g_i^*(\theta) - \bar{g}_n(\theta)] 
+$$
+where $\bar{g}_n(\theta) = 1/n \sum g_i(\theta)$. 
+
+Here is a simulation to illustrate. It uses the same IV-logit share
+example as in the extremum estimation notes.
+```julia; cache=true
+using Optim, ForwardDiff, LinearAlgebra, Distributions, Plots
+Plots.gr()
+function simulate_ivshare(n,β,γ,ρ)
+  z = randn(n, size(γ)[1])
+  endo = randn(n, length(β))
+  x = z*γ .+ endo
+  ξ = rand(Normal(0,sqrt((1.0-ρ^2))),n).+endo[:,1]*ρ
+  y = cdf.(Logistic(), x*β .+ ξ)
+  return((y=y,x=x,z=z))
+end
+n = 100
+k = 2
+iv = 3
+β0 = ones(k)
+π0 = vcat(diagm(0=>ones(k)),ones(iv-k,k))
+ρ = 0.5
+(y,x,z) = simulate_ivshare(n,β0,π0,ρ)
+
+function gi_ivshare(β,y,x,z)
+  ξ = quantile.(Logistic(),y) .- x*β
+  ξ.*z
+end
+
+function arstat(gi)
+  n = size(gi)[1]
+  gn = mean(gi,dims=1) 
+  W = pinv(cov(gi))
+  n*( gn*W*gn')[1]
+end
+
+function ar(θ,gi)
+  n,m = size(gi(θ))
+  1.0-cdf(Chisq(m), arstat(gi(θ)))
+end
+
+function bootstrapAR(θ,gi)
+  giθ = gi(θ)
+  gn = mean(giθ,dims=1)
+  n = size(giθ)[1]
+  S = 999
+  T =hcat([ [arstat(giθ[sample(1:n,n,replace=true),:]),
+             arstat(giθ[sample(1:n,n,replace=true),:].-gn)
+             ] for s in 1:S]...)'
+  t = arstat(giθ)
+  [1-cdf(Chisq(length(gn)),t)  mean(T.>=t, dims=1)]
+end
+
+bootstrapAR(β0, β->gi_ivshare(β, y,x,z))
+function simulatetests()
+  (y,x,z) = simulate_ivshare(n,β0,π0,ρ)
+  ap = ar(β0, β->gi_ivshare(β, y,x,z))
+  bsp=bootstrapAR(β0, β->gi_ivshare(β, y,x,z))
+end
+pvals = vcat([simulatetests() for s in 1:500]...)
+p = 0:0.01:1.0
+plot(p, p->(mean(pvals[:,1].<p)-p),  label="asymptotic", legend=:bottomleft)
+plot!(p, p->(mean(pvals[:,2].<p)-p),  label="incorrect bootstrap")
+plot!(p, p->(mean(pvals[:,3].<p)-p),  label="correct bootstrap")
 ```
+
+With the same sort of modification the KLM and CLR statistics can also
+be bootstrapped. All three statistics remain identification robust
+when bootstrapped. See @kleibergen2006 for details.
+
+## Single coefficients
+
+If we want to construct a confidence interval for a single
+coefficient, we can apply the bootstrap to a statistic like 
+$\sqrt{n} (\hat{\theta} - \theta_0)$ (or a studentized version of
+it). Just like in the previous subsection, we must be careful to
+ensure that the null hypothesis holds in the bootstrapped data. Also,
+as above, we can do this by subtracting $1/n\sum_i g_i(\hat{\theta})$
+from the bootstrapped moments. Thus, one way to bootstrap is 
+$\sqrt{n} (\hat{\theta} - \theta_0)$ is to
+
+- Compute $\hat{\theta}$, $\bar{g}_n(\theta) = 1/n\sum_i g_i(\hat{\theta})$
+- Draw with replacement $g_i^*(\theta)$ from \{g_i(\theta) -
+  \bar{g}_n(\theta)\}_{i=1}^n$. 
+- Compute 
+$$\hat{\theta}^* = \argmin [1/n \sum_i g_i^*(\theta)] W_n^*(\theta)
+  [1/n \sum g_i^*(\theta]$$
+- Use distribution of $\sqrt{n} (\hat{\theta}^* - \hat{\theta})$ to
+  approximate $\sqrt{n} (\hat{\theta} - \theta_0)$
+
+For some models, the minimazation needed to compute $\hat{\theta}^*$
+can be very time consuming. Fortunately, it can be avoided. A key step
+in showing that $\hat{\theta}$ is asymptotically normal is a
+linearization
+$$
+\sqrt{n}(\hat{\theta} - \theta_0) = -(D'WD)^{-1} (D' W)
+\frac{1}{\sqrt{n}} \sum_i g_i(\theta_0) + o_p(1) 
+$$
+Showing the bootstrap estimator is asymptotically normal conditional
+on the data involves a similar linearization
+$$
+\sqrt{n}(\hat{\theta}^* - \hat{\theta}) = -(\hat{D}'\hat{W}\hat{D})^{-1} (\hat{D}' \hat{W})
+\frac{1}{\sqrt{n}} \sum_i g_i^*(\hat{\theta}) + o_p(1) 
+$$
+This suggests taking 
+$$
+\hat{\theta}^* = \hat{\theta} + (\hat{D}'\hat{W}\hat{D})^{-1} (\hat{D}' \hat{W})
+\frac{1}{\sqrt{n}} \sum_i g_i^*(\hat{\theta}) 
+$$
+instead of re-minimizing. 
+
+```julia; cache=true
+using Optim, ForwardDiff, LinearAlgebra, Distributions, Plots
+Plots.gr()
+function simulate_ivshare(n,β,γ,ρ)
+  z = randn(n, size(γ)[1])
+  endo = randn(n, length(β))
+  x = z*γ .+ endo
+  ξ = rand(Normal(0,sqrt((1.0-ρ^2))),n).+endo[:,1]*ρ
+  y = cdf.(Logistic(), x*β .+ ξ)
+  return((y=y,x=x,z=z))
+end
+n = 50
+k = 2
+iv = 3
+β0 = ones(k)
+π0 = vcat(diagm(0=>ones(k)),ones(iv-k,k))
+ρ = 0.5
+(y,x,z) = simulate_ivshare(n,β0,π0,ρ)
+
+function gi_ivshare(β,y,x,z)
+  ξ = quantile.(Logistic(),y) .- x*β
+  ξ.*z
+end
+
+function gmmObj(θ,gi,W, weights)
+  g = gi(θ)
+  m = mean(g.*weights,dims=1)
+  (size(g)[1]*( m*W*m')[1]) # return scalar, not 1x1 array
+end
+
+function gmmVar(θ,gi,W)
+  g = gi(θ)
+  n = size(g)[1]
+  D = ForwardDiff.jacobian(θ->mean(gi(θ),dims=1),θ)
+  Σ = cov(gi(θ))
+  1/n*inv(D'*W*D)*(D'*W*Σ*W*D)*inv(D'*W*D)
+end
+
+function bsweights(n)
+  s = sample(1:n,n)
+  (x->sum(x.==s)).(1:n)
+end
+
+function bootstrapt(θ,gi, W)
+  giθ = gi(θ)
+  gn = size(giθ)[1]
+  D = ForwardDiff.jacobian(θ->mean(gi(θ),dims=1),θ) 
+  function bootonce(θ,gi)
+    giθ = gi(θ)
+    n = size(giθ)[1]
+    gn = mean(giθ,dims=1)
+    w = bsweights(n)
+    opt1 = optimize(θ->gmmObj(θ, gi, W, w), θ, BFGS(), autodiff =:forward)
+    θs1 = opt1.minimizer
+    θs2 = θ - inv(D'*W*D)*(D'*W*( (mean(giθ.*w,dims=1).-gn)' ))
+    [θs1[1] θs2[1]]
+  end
+  S = 299
+  vcat([bootonce(θ,gi) for s in 1:S]...)
+end
+gi = θ->gi_ivshare(θ, y,x,z)
+W = I
+θhat = optimize(θ->gmmObj(θ, gi, W,ones(n)), β0, BFGS(), autodiff =:forward).minimizer
+θs = bootstrapt(θhat,gi,I)
+using StatPlots
+density(θs[:,1], label="minimization bootstrap")
+density!(θs[:,1], label="score bootstrap")
+
+
+function simulatetests()
+  (y,x,z) = simulate_ivshare(n,β0,π0,ρ)
+  gi = θ->gi_ivshare(θ, y,x,z)
+  W = I
+  θhat = optimize(θ->gmmObj(θ, gi, W,ones(n)), β0, BFGS(), autodiff =:forward).minimizer
+  θs = bootstrapt(θhat,gi,I)
+  p = mean((θhat[1]-β0[1]).<(θs .- θhat[1]), dims=1)
+end
+
+pvals = vcat([simulatetests() for s in 1:50]...)
+p = 0:0.01:1.0
+plot(p, p->(mean(pvals[:,1].<p)-p),  label="minimization bootstrap", legend=:best)
+plot!(p, p->(mean(pvals[:,2].<p)-p),  label="score bootstrap")
+```
+
+Both versions of the bootstrap appear to work well enough here. Note
+that neither one is robust to identification problems. Inference on a
+subset of parameters while remaining robust to identification problems
+is somewhat of an open problem. Various conservative approaches are
+available, the simplest of which is to just take projections of the
+AR, KLM, or CLR confidence sets. There are also more powerful
+approaches for situations where you know which parameters are strongly
+vs weakly identified. 
+
+
+

@@ -502,7 +502,7 @@ function gmmVar(θ,gi,W)
   n = size(g)[1]
   D = ForwardDiff.jacobian(θ->mean(gi(θ),dims=1),θ)
   Σ = cov(gi(θ))
-  1/n*inv(D'*W*D)*(D'*Σ*D)*inv(D'*W*D)
+  1/n*inv(D'*W*D)*(D'*W*Σ*W*D)*inv(D'*W*D)
 end
 
 function ar(θ,gi)

@@ -1,0 +1,197 @@
+---
+title       : "Empirical likelihood"
+subtitle    :
+author      : Paul Schrimpf
+date        : `j using Dates; print(Dates.today())`
+bibliography: "el.bib"
+---
+
+<a rel="license"
+href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative
+Commons License" style="border-width:0"
+src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png"
+/></a><br />This work is licensed under a <a rel="license"
+href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+Commons Attribution-ShareAlike 4.0 International License</a>.
+
+### About this document {-}
+
+This document was created using Weave.jl. The code is available in
+[the course github
+repository](https://github.com/ubcecon/ECON628_2018/paul). The same
+document generates both static webpages and associated jupyter
+notebooks.
+
+$$
+\def\indep{\perp\!\!\!\perp}
+\def\Er{\mathrm{E}}
+\def\R{\mathbb{R}}
+\def\En{{\mathbb{E}_n}}
+\def\Pr{\mathrm{P}}
+\newcommand{\norm}[1]{\left\Vert {#1} \right\Vert}
+\newcommand{\abs}[1]{\left\vert {#1} \right\vert}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\def\inprob{\,{\buildrel p \over \rightarrow}\,} 
+\def\indist{\,{\buildrel d \over \rightarrow}\,} 
+$$
+
+# Empirical likelihood
+
+An interesting alternative to GMM is (generalized) empirical
+likelihood (GEL). Empirical likelihood has some appealing higher-order
+statistical properties. In particular, it can be shown to have lower
+order asymptotic bias than GMM. See @newey2004. Relatedly, certain
+test statistics based on EL are robust to weak identification
+[@guggenberger2005]. In fact, the identification robust tests that we
+have discusses are all based on the CUE-GMM objective function. The
+CUE-GMM objetive is a special case of generalized empirical
+likelihood. 
+
+A perceived downside of GEL is that it involves a more difficult
+looking optimization problem than GMM. However, given the ease with
+which Julia can solve high dimensional optimization problems, GEL is
+very feasible. 
+
+As in the extremum estimation notes, suppose we have moment conditions
+such that
+$$
+    \Er[g_i(\theta)] = 0
+$$
+where $g_i:\R^p \to \R^k$ are some data dependent moment
+conditions. The empirical likelihood estimator solves
+$$
+\begin{align*}
+    (\hat{\theta}, \hat{\pi}) = & \argmax_{\theta,\pi} \frac{1}{n} \sum_i
+    \log(\pi_i) \;\; s.t.  \\
+     & \frac{1}{n} \sum_i \pi_i = 1, \;\; 0\leq \pi \leq 1 \\
+     & \sum_i \pi_i g_i(\theta) = 0 
+\end{align*}
+$$
+
+Generalized empirical likelihood replaces $\log(\pi)$ with some other
+convex function $h(\pi)$, 
+$$
+\begin{align*}
+    (\hat{\theta}^{GEL,h}, \hat{\pi}) = & \argmin_{\theta,\pi}
+                                          \frac{1}{n} \sum_i h(\pi_i) \;\; s.t.  \\
+     & \frac{1}{n} \sum_i \pi_i = 1, \;\; 0\leq \pi \leq 1 \\
+     & \sum_i \pi_i g_i(\theta) = 0 
+\end{align*}
+$$
+setting $h(\pi) = \frac{1}{2}(\pi^2-(1/n)^2)$ results in an estimator
+identical to the CUE-GMM estimator.
+
+A common approach to computing GEL estimators is to eliminate $\pi$ by
+looking at the dual problem
+$$
+\hat{\theta}^{GEL}  = \argmin_{\theta}\sup_\lambda \sum_i \rho(\lambda'g_i(\theta))
+$$
+where $\rho$ is some function related to $h$. See @newey2004 for
+details. There can be some analytic advantages to doing so, but
+computationally, the original statement of the problem has some
+advantages. First, there is more existing software for solving
+constrained minimization problems than for solving saddle point
+problems. Second, although $\pi$ is high dimensional, it enters the
+constraints linearly, and the objective function is concave. Many
+optimization algorithms will take good advantage of this. 
+
+Let's look at some Julia code. Since the problem involves many
+variables with linear constraints, it is worthwhile to use JuMP for
+optimization. The code is very slightly more verbose, but the speed of
+JuMP (and the Ipopt solver) are worth it.
+
+```julia; cache=true
+using JuMP, Ipopt, LinearAlgebra, Distributions, Plots
+Plots.gr()
+function simulate_ivshare(n,β,γ,ρ)
+  z = randn(n, size(γ)[1])
+  endo = randn(n, length(β))
+  x = z*γ .+ endo
+  ξ = rand(Normal(0,sqrt((1.0-ρ^2))),n).+endo[:,1]*ρ
+  y = cdf.(Logistic(), x*β .+ ξ)
+  return((y=y,x=x,z=z))
+end
+n = 500
+k = 2
+iv = 3
+β0 = ones(k)
+π0 = vcat(diagm(0=>ones(k)),ones(iv-k,k))
+ρ = 0.5
+(y,x,z) = simulate_ivshare(n,β0,π0,ρ)
+
+function gi_ivshare(β,y,x,z)
+  ξ = quantile.(Logistic(),y) .- x*β
+  ξ.*z
+end
+
+function gel_jump(y,x,z)
+  n,d = size(x)
+  n,k = size(z)
+  Ty = quantile.(Logistic(),y)   
+  m = Model(solver=IpoptSolver())
+  @variable(m, 0.0 <= p[1:n] <= 1.0)
+  @variable(m, θ[1:d])
+  @constraint(m, prob,sum(p)==1.0)
+  @constraint(m, momentcon[i=1:k], dot((Ty - x*θ).*z[:,i],p)==0.0)
+  @NLobjective(m,Max, sum(log(p[i]) for i in 1:n))
+  return(m)
+end
+
+m = gel_jump(y,x,z)
+@show m
+solve(m)
+@show getvalue(getindex(m,:θ) )
+@show getvalue(getindex(m,:p) )
+@show getdual(getindex(m,:θ)  )
+@show getdual(getindex(m,:p))
+@show getdual(getindex(m,:prob))
+
+using BenchmarkTools
+m.solver=IpoptSolver(print_level=0)
+@btime (()->(setvalue(getindex(m,:θ),zeros(length(β0)));
+             solve(m)))()
+m.solver=IpoptSolver(print_level=5)
+```
+
+For comparison here is how long it takes JuMP + Ipopt to solve for the
+CUE-GMM estimator. 
+
+```julia; cache=true
+function gmmObj(θ,gi,W)
+  g = gi(θ)
+  m = mean(g,dims=1)
+  (size(g)[1]*( m*W*m')[1]) # return scalar, not 1x1 array
+end
+
+function cue_jump(y,x,z)
+  n,d = size(x)
+  n,k = size(z)
+  cueobj = (θ1,θ2)->gmmObj([θ1,θ2],β->gi_ivshare(β,y,x,z),
+                           inv(cov(gi_ivshare([θ1,θ2],y,x,z))))
+  m = Model(solver=IpoptSolver())
+  JuMP.register(m, :cueobj, 2, cueobj, autodiff=true)
+  @variable(m, θ[1:d])
+  @NLobjective(m,Min,cueobj(θ[1],θ[2])) 
+  return(m)
+end
+@show mcue = cue_jump(y,x,z)
+solve(mcue)
+@show getvalue(getindex(mcue,:θ) )
+
+mcue.solver=IpoptSolver(print_level=0)
+@btime (()->(setvalue(getindex(mcue,:θ),zeros(length(β0)));
+             solve(mcue)))()
+mcue.solver=IpoptSolver(print_level=5)
+
+```
+
+## Bootstrap for EL
+
+For bootstrapping GMM, we discussed how it is important that the null
+hypothesis holds in the bootstrapped data. In GMM we did this by
+substracting the sample averages of the moments. In GEL, an
+alternative way to impose the null, is to sample the data with
+probabilities $\hat{\pi}_i$ instead of with equal proability. See
+@brown2002 for more information. 
+
