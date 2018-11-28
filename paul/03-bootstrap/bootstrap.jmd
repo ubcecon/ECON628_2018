@@ -247,6 +247,7 @@ masses at 0. The CDF is no longer continuous, so the theorem above
 does not apply. 
 
 Here's an illustration 
+
 ```julia; cache=true
 using StatPlots, Distributions
 Plots.gr()
@@ -307,6 +308,7 @@ where $\bar{g}_n(\theta) = 1/n \sum g_i(\theta)$.
 
 Here is a simulation to illustrate. It uses the same IV-logit share
 example as in the extremum estimation notes.
+
 ```julia; cache=true
 using Optim, ForwardDiff, LinearAlgebra, Distributions, Plots
 Plots.gr()
@@ -480,8 +482,9 @@ W = I
 using StatPlots
 density(θs[:,1], label="minimization bootstrap")
 density!(θs[:,1], label="score bootstrap")
+```
 
-
+```julia; cache=true
 function simulatetests()
   (y,x,z) = simulate_ivshare(n,β0,π0,ρ)
   gi = θ->gi_ivshare(θ, y,x,z)
@@ -491,7 +494,7 @@ function simulatetests()
   p = mean((θhat[1]-β0[1]).<(θs .- θhat[1]), dims=1)
 end
 
-pvals = vcat([simulatetests() for s in 1:50]...)
+pvals = vcat([simulatetests() for s in 1:300]...)
 p = 0:0.01:1.0
 fig=plot(p, p->(mean(pvals[:,1].<p)-p),
          label="minimization bootstrap", legend=:best)
