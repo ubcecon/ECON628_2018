@@ -403,7 +403,7 @@ if we assume only that
 
 then 
 $$
-n [1/n \sum g_i(\theta_0)]' W_n^{-1} [1/n \sum g_i(\theta_0)]
+n [1/n \sum g_i(\theta_0)]' W_n [1/n \sum g_i(\theta_0)]
   \indist \chi^2_m
 $$
 where $m$ is the number of moments (dimension of $g_i(\theta)$). This

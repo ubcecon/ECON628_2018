@@ -261,8 +261,6 @@ function loglikei_u(u::AbstractMatrix,
   return(loglikei)
 end
 
-
-
 end # module dynamicDecision
 
 

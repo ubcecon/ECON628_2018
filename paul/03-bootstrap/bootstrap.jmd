@@ -218,7 +218,7 @@ for i=1:4
   plot!(fig,p, p->(mean(res[i][3,:].<p)-p), title="N=$(N[i])",
         label="non-pivotal boostrap", subplot=i)
 end
-display(fig)
+fig
 ```
 
 This figure shows the simulated CDF of p-values minus p. For a
@@ -386,11 +386,13 @@ from the bootstrapped moments. Thus, one way to bootstrap is
 $\sqrt{n} (\hat{\theta} - \theta_0)$ is to
 
 - Compute $\hat{\theta}$, $\bar{g}_n(\theta) = 1/n\sum_i g_i(\hat{\theta})$
-- Draw with replacement $g_i^*(\theta)$ from \{g_i(\theta) -
+- Draw with replacement $g_i^*(\theta)$ from $\{g_i(\theta) -
   \bar{g}_n(\theta)\}_{i=1}^n$. 
 - Compute 
+
 $$\hat{\theta}^* = \argmin [1/n \sum_i g_i^*(\theta)] W_n^*(\theta)
   [1/n \sum g_i^*(\theta]$$
+  
 - Use distribution of $\sqrt{n} (\hat{\theta}^* - \hat{\theta})$ to
   approximate $\sqrt{n} (\hat{\theta} - \theta_0)$
 
@@ -477,7 +479,9 @@ function bootstrapt(θ,gi, W)
 end
 gi = θ->gi_ivshare(θ, y,x,z)
 W = I
-θhat = optimize(θ->gmmObj(θ, gi, W,ones(n)), β0, BFGS(), autodiff =:forward).minimizer
+optres = optimize(θ->gmmObj(θ, gi, W,ones(n)), β0, BFGS(),
+                  autodiff = :forward)
+θhat = optres.minimizer
 θs = bootstrapt(θhat,gi,I)
 using StatPlots
 density(θs[:,1], label="minimization bootstrap")
@@ -489,7 +493,8 @@ function simulatetests()
   (y,x,z) = simulate_ivshare(n,β0,π0,ρ)
   gi = θ->gi_ivshare(θ, y,x,z)
   W = I
-  θhat = optimize(θ->gmmObj(θ, gi, W,ones(n)), β0, BFGS(), autodiff =:forward).minimizer
+  optres = optimize(θ->gmmObj(θ, gi, W,ones(n)), β0, BFGS(), autodiff =:forward)
+  θhat = optres.minimizer 
   θs = bootstrapt(θhat,gi,I)
   p = mean((θhat[1]-β0[1]).<(θs .- θhat[1]), dims=1)
 end
@@ -499,7 +504,7 @@ p = 0:0.01:1.0
 fig=plot(p, p->(mean(pvals[:,1].<p)-p),
          label="minimization bootstrap", legend=:best)
 plot!(fig,p, p->(mean(pvals[:,2].<p)-p),  label="score bootstrap")
-display(fig)
+fig
 
 ```
 

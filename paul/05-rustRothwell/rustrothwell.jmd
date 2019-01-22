@@ -1,5 +1,5 @@
 ---
-title       : "Example: Rust & Rothwell (19"
+title       : "Example: Rust & Rothwell (1995)"
 subtitle    : 
 author      : Paul Schrimpf
 date        : `j using Dates; print(Dates.today())`
@@ -458,5 +458,66 @@ DataFrame([ϕnames ϕpre sqrt.(diag(vpre.V,0)) ϕpost sqrt.(diag(vpost.V,0))],
 
 # Model fit
 
+```julia
+fitd = deepcopy(plantData)
+u = payoffs(ϕpost, statefn, actionfn)
+v = choicevalue(u, T, P, feasible)
+@threads for t in 1:size(v)[1]
+  for s in 1:size(v)[2]
+    ccp[t,s,:] = choice_prob_mlogit(v[t,s,:])
+  end
+end
+
+for a in 1:actionfn.n
+  var = Symbol("p_$(actionfn.data(a))[1]")
+  fitd[var] = missing
+  @threads for i in 1:nrow(data)
+    if (ismissing(data[time][i]) ||
+        ismissing(data[stateidx][i]) ||
+        ismissing(data[actionidx][i]))
+      fitd[var][i] = missing
+    else
+      fitd[var][i] = ccp[data[time][i], data[stateidx][i],
+                         data[actionidx][i]]
+    end
+  end
+end
+
+function plotfittime(a)
+  var = Symbol("p_$(actionfn.data(a)[1])")
+  tmp = fitd[[:t; :year; :month; :action; var]]
+  tmp[:Year] = tmp[:year] + (tmp[:month].-1)./12
+  categorical!(tmp, :t)
+  tmp[:obsp] = fitd[:action].== actionfn.data(a)[1]
+  fmla = @eval @formula($var ~ t)
+  avglm = lm(fmla, tmp)
+  avg = unique(tmp[[:t; :Year]])
+  # :confint seems to require an X matrix instead of a dataframe 
+  newTerms = StatsModels.dropresponse!(avglm.mf.terms)
+  mf = ModelFrame(newTerms, avg; contrasts = avglm.mf.contrasts)
+  newX = ModelMatrix(mf).m  
+  pred = predict(avglm, newX, :confint)
+  avg[var] = pred[:,1]
+
+  avglm = lm(@formula(obsp ~ t), tmp)
+  avg = unique(tmp[[:t; :Year]])
+  newTerms = StatsModels.dropresponse!(avglm.mf.terms)
+  mf = ModelFrame(newTerms, avg; contrasts = avglm.mf.contrasts)
+  newX = ModelMatrix(mf).m  
+  pred = predict(avglm, newX, :confint)
+  avg[:obs] = pred[:,1]
+  plot(avg[:Year], avg[var], label="fitted",
+       legend=:best, xlabel="year", ylabel=ylabel,
+       xticks=minimum(tmp[:year]):maximum(tmp[:year]))
+  plot!(avg[:Year], avg[:obs], label="observed",
+       legend=:best, xlabel="year", ylabel=ylabel,
+       xticks=minimum(tmp[:year]):maximum(tmp[:year]))
+
+end
+
+
+```
+
 # Counterfactuals
+
 
